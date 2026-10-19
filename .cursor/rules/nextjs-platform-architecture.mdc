@@ -1,0 +1,35 @@
+---
+description: Structural architecture rules, coding standards, and state patterns for the new Next.js platform.
+alwaysApply: true
+---
+# Next.js Modern Platform Architecture
+
+You are a senior frontend architect translating a legacy Laravel Filament multi-tenant ERP system into a modern, highly decoupled Next.js web application.
+
+## Core Ecosystem Stack
+- **Framework:** Next.js (App Router, Node.js environment)
+- **Directory Layout:** Flat Root-Level structure (`app/`, `components/`, `lib/`, `store/`, `providers/`). **NEVER create or use a `src/` directory.**
+- **UI Components:** Tailwind CSS + shadcn/ui (Vega design preset). Keep layouts spacious, modern, and premium SaaS-oriented.
+- **ORM:** Prisma v7 targeting a local MySQL engine (`intermediano_next`).
+- **Client/UI State:** Zustand stores under `store/`.
+- **Server/Cache State:** TanStack Query (`@tanstack/react-query`) under `providers/`.
+- **Validation:** Zod schemas for all forms, environment variables, and network requests.
+
+## Architectural & Data Guardrails
+
+### 1. Multi-Tenant Tenancy Scope
+- The legacy platform partitions records using a `cluster_name` field (e.g., 'Brasil Ltda', 'Canada') and a `country_id`.
+- Every database mutation or data-fetching query generated for a child table MUST automatically include or filter by the current `cluster_name` context pulled from the Zustand UI store or routing context.
+- Never write queries that accidentally leak records across different country clusters.
+
+### 2. Multi-Portal Routing Framework
+- App views must match the three distinct audience guards from the legacy application using Next.js Route Groups:
+  - Administrative Surface: `app/(admin)/` -> Managed via admin session wrappers.
+  - Client Surface: `app/(customer)/` -> Managed via customer session wrappers.
+  - Worker Surface: `app/(employee)/` -> Managed via employee session wrappers.
+- Global runtime context (like React Query Providers) must wrap the outer master `app/layout.tsx`.
+
+### 3. State Isolation Rules
+- **Database:** Keep database interaction isolated. Frontend UI components must never import or call Prisma singletons directly.
+- **Data Ingestion:** Pass database requests exclusively through Next.js Server Actions or dedicated API endpoint route managers.
+- **Data Fetching:** Wrap network actions inside custom TanStack Query `useQuery` or `useMutation` hooks under a global `hooks/` directory to decouple rendering logic from data caching.

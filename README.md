@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+### Intermediano ERP - Next.js Modern Platform
 
-## Getting Started
+This is the modernized, decoupled Next.js reconstruction of the legacy Laravel Filament ERP monolith. This boilerplate establishes a type-safe, multi-tenant environment optimized for performance, scalability, and enhanced developer velocity. 
 
-First, run the development server:
+### 🚀 Core Tech Stack
 
-```bash
+* **Framework:** Next.js 15+ (App Router)
+* **Database Engine:** MySQL
+* **ORM:** Prisma v7 (Custom Client Generation)
+* **Client State Management:** Zustand
+* **Server Cache State:** TanStack React Query v5
+* **UI & Styling:** Tailwind CSS + shadcn/ui (Vega Style Preset)
+* **Validation:** Zod
+
+### 📁 Repository Directory Structure
+
+This project uses a clean, flat, root-level layout to align seamlessly with native shadcn/ui component lookups and custom path configurations. **Do not introduce a src/ directory to this project.** 
+
+text
+
+├── app/                  # Next.js App Router & Layout Structures
+│   ├── (admin)/          # Administrative Portal Panels (/admin)
+│   ├── (customer)/       # Client Portal Surface (/customer)
+│   └── (employee)/       # Worker Profile Surface (/employee)
+├── components/           # Reusable shadcn/ui Design Tokens & Core Components
+├── hooks/                # Custom TanStack Query Hooks & Shared Client Actions
+├── lib/                  # Singletons, Utilities, and Database Clients
+│   └── prisma.ts         # Hot-reload protected Prisma Client Singleton
+├── providers/            # React Context Wrappers (QueryProvider, ThemeProvider)
+├── store/                # Global Zustand Stores (UI & Tenancy Isolation Caches)
+└── prisma/               # Schema Definitions & Modular Database Seeds
+
+Use code with caution.
+
+### 🛠️ Local Environment Setup
+
+Follow these steps to initialize your isolated local development sandbox database and start the application. 
+
+### 1. Configure Environment Variables
+
+Create a .env file in the root directory and declare your connection parameters targeting your local sandbox catalog: 
+
+env
+
+DATABASE_URL="mysql://root:@127.0.0.1:3306/intermediano_next"
+
+Use code with caution.
+
+### 2. Install Project Dependencies
+
+bash
+
+npm install
+
+Use code with caution.
+
+### 3. Initialize & Sync the Database
+
+Push the optimized, normalized database schemas directly into your local sandbox catalog without affecting legacy database snapshots: 
+
+bash
+
+npx prisma db push
+
+Use code with caution.
+
+### 4. Seed Development Data
+
+Populate your database tables with relational, constraint-safe mock datasets: 
+
+bash
+
+npx prisma db seed
+
+Use code with caution.
+
+### 5. Generate Type Safety Client Bindings
+
+Synchronize and generate the localized database client engine instances: 
+
+bash
+
+npx prisma generate
+
+Use code with caution.
+
+### 6. Run the Development Server
+
+bash
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Use code with caution.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Open [http://localhost:3000](http://localhost:3000) inside your browser to view the application surfaces. 
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 🛡️ Architecture & Guardrails
 
-## Learn More
+### 1. Multi-Tenant Country Scoping
 
-To learn more about Next.js, take a look at the following resources:
+Every data mutation or database fetch transaction must strictly scope against the cluster_name variable (e.g., Brasil Ltda, Canada) found inside the global Zustand store (store/use-ui-store.ts). This ensures data isolation across the 11 country clusters. 
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 2. Layer Isolation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+* **No Direct Prisma Calls in UI:** Frontend UI layouts or components must never query the Prisma database client directly.
+* **Data Mutation:** Use Next.js Server Actions or dedicated endpoint routes.
+* **Data Querying:** Wrap data ingestion processes in custom TanStack Query useQuery configurations under the hooks/ path to handle frontend caching seamlessly.
 
-## Deploy on Vercel
+### 3. AI Copilot Integration
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Cursor editor configuration rules are safely locked inside .cursor/rules/nextjs-platform-architecture.mdc. These ensure that any code generated by AI agents inside this workspace automatically enforces our team's structural, architectural, and multi-tenant constraints.

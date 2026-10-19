@@ -1,0 +1,10 @@
+---
+description: Critical safety guidelines and architectural constraints for working on the intermediano production codebase
+alwaysApply: true
+---
+# Production Safeguards & Project Context
+
+- **Preserve Existing Patterns:** Never rewrite working code or switch patterns (like refactoring standard functions to arrow functions) unless explicitly instructed. Match the exact style of surrounding code.
+- **Zero-Downtime Mentality:** Ensure all API routes, database schemas, and data structures remain fully backward-compatible so we don't break the production app.
+- **Defensive Error Handling:** Every async operation, API route, and data-fetching call must be wrapped in explicit try/catch blocks or error handlers.
+- **Explain Before Executing:** Always map out your blueprint in Plan Mode and wait for human approval before applying multi-file code modifications.

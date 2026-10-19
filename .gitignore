@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/lib/generated/prisma
+
+# Cursor AI Rules & Framework
+.cursor/
+!.cursor/rules/
+
+# Block unwanted agent metadata folders
+.agents/
+.claude/
+.windsurf/
+

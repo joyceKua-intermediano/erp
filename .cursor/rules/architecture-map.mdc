@@ -1,0 +1,84 @@
+---
+alwaysApply: false
+---
+# Intermediano Project Architecture
+
+Intermediano architecture
+Laravel 11 monolith for multi-country employment, quotations, contracts, and payroll. Source: repository layout, composer.json, panel providers, and routes. Read-only review.
+
+3
+Filament panels
+11
+Country company clusters
+45
+Eloquent models
+0
+REST API route files
+Routing is Filament, not a controller API
+CRUD never hits a dedicated API layer. Filament discovers resources and serves them as Livewire pages under /admin, /customer, and /employee. routes/web.php only redirects home to /admin, serves private signatures, and handles the welcome-password flow.
+Where each layer lives
+Layer	Path	What it owns
+HTTP entry	bootstrap/app.php, routes/web.php	Web routes, console schedule, health check at /up. No routes/api.php.
+Panels	app/Providers/Filament	Three Filament panels register Livewire routes, auth, and resource discovery.
+UI resources	app/Filament	Admin resources, 11 country clusters, customer portal, employee portal, widgets, pages.
+Domain models	app/Models	45 Eloquent models. Shared tables; country scope is cluster_name plus country_id.
+Business rules	app/Helpers, app/Services, app/Support	Country quotation math, contract PDFs, provisions, exchange rates, vacation.
+Documents	resources/views/pdf, resources/views/exports	DomPDF contract and quotation templates, Excel export blades.
+Request path
+Browser to panel
+Nginx and PHP 8.3 in Docker (`docker/web/Dockerfile`, serversideup php:8.3-fpm-nginx) hand the request to Laravel 11.
+
+`AdminPanelProvider` mounts the default panel at /admin on the web guard. `CustomerPanelProvider` and `EmployeePanelProvider` mount /customer and /employee on their own session guards.
+
+Spatie permissions gate admin navigation and each cluster’s `canAccess()`. New users get a Spatie welcome notification and set a password at /welcome.
+
+Panel to persistence
+Resource classes build Filament forms and tables. Pages call helpers for quotation totals, provisions, and PDF output, then persist Eloquent models.
+
+PostgreSQL 17 is the documented database (`DB_CONNECTION=pgsql` in .env.example). Queue and cache both use the database driver. A queue container and a scheduler container run beside the web container.
+
+Files default to the local disk. S3 is available through league/flysystem-aws-s3-v3. Signatures are stored privately and streamed by the one custom web route.
+
+Three audiences
+URL	Guard	Model	Surface
+/admin	web	User	Default panel. Sales, admin, investments, and the 11 company clusters.
+/customer	customer	Customer	Client portal: contracts, timesheets, expenses, vacations.
+/employee	employee	Employee	Worker portal: profile, contract, timesheet, payslip, documents.
+Guards are defined in config/auth.php. User implements FilamentUser with Spatie HasRoles. Employee and Customer each allow only their own panel.
+
+Country clusters
+Each legal entity is a Filament cluster under `app/Filament/Clusters`, grouped as Intermediano Group Companies. Clusters reuse the same models and filter by `cluster_name`. The repeated resource set — quotation, employee, employee contract, customer contract, expenses, timesheet, payroll — is the core. A few entities add partner or invoice screens.
+
+Cluster	Screens beyond the shared core
+Brasil Ltda	Core + payslip
+Canada	Core + payslip + partner quotation, contract, payroll
+Chile SPA	Core
+Colombia SAS	Core
+Costa Rica	Quotation, employee, contracts, payroll, partner quotation and contract
+Ecuador SAS	Core
+Global Services Ltda	Core + payslip
+Hong Kong	Core + partner set + invoice
+Mexico SC	Core
+Peru SAC	Core
+Uruguay	Core + partner set + MSP payroll
+Core means quotation, employee, employee contract, customer contract, expenses, timesheet, and payroll. Costa Rica omits timesheet and expenses. Invoice exists only on Hong Kong. MSP payroll exists only on Uruguay.
+
+Shared admin, outside the clusters
+`app/Filament/Resources` holds cross-company records: companies, customers, partners, consultants, leads (including a kanban board), vacancies, investments, countries, currencies, holidays, templates, users, roles, and permissions. Navigation groups are Administration, Intermediano Companies, Investments, Recruitment, Sales, and Settings.
+
+Business logic
+Calculation engine
+Country payroll and quotation formulas are procedural helpers in `app/Helpers/Quotation`, autoloaded as files from composer.json. `QuotationHelper.php` is the Colombia ordinary calculation (pension, health, ICBF, SENA, ARL, cesantías, prima, vacation). Sibling helpers cover Argentina, Brasil, Canada (plus Quebec), Chile, Costa Rica, Dominican Republic, Ecuador, El Salvador, Guatemala, Honduras, Hong Kong, Jamaica, Mexico, Nicaragua, Panama, Peru, Uruguay, freelance, and integral contracts.
+
+Related helpers cover provisions, payroll-cost form fields, accrued balances, spelled-out currency, contract HTML, and USD exchange rates. The scheduler in `routes/console.php` refreshes each country’s converted currency quota through `ExchangeRateHelper`.
+
+The one service class
+`app/Services/ContractTemplateService.php` merges contract tags and renders PDFs with barryvdh/laravel-dompdf. Country wording lives in `app/Support` (Brazil translations, Colombia payroll overrides, Canada provinces, HTML sanitizing for the WAF-safe TipTap editor).
+
+Models that carry rules
+Most models are relationships and fillable fields. `Employee` also computes accrued, taken, and remaining vacation from the contract start date. `Quotation` and `Contract` both store `cluster_name`, which is how one table serves every country cluster.
+
+Exports in `app/Exports` use maatwebsite/excel and pxlrbt/filament-excel. There is no Jobs, Observers, or Actions directory. Feature and unit tests are still the Laravel examples.
+
+Front end
+There is no React or Vue component tree. Screens are Filament PHP resources plus Blade. Vite 5 compiles Tailwind (`resources/css/filament/admin/theme.css` and `resources/css/app.css`). `resources/js` is the default Laravel bootstrap. Rich text uses awcodes/filament-tiptap-editor, signatures use saade/filament-autograph, and leads use mokhosh/filament-kanban. `UnpackWafSafeHtml` unwraps TipTap HTML on `livewire/update` before it hits the editor.
