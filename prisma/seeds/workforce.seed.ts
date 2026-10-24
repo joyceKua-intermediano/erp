@@ -8,7 +8,7 @@ export const employees = [
     consultant_id: ids.consultant.andrea,
     email: "juan.perez@employee.test",
     password: MOCK_PASSWORD_HASH,
-    company: "Intermediano Colombia SAS",
+    intermediano_company_id: ids.intermedianoCompany.colombia,
     ...timestamps,
   },
   {
@@ -17,7 +17,7 @@ export const employees = [
     consultant_id: ids.consultant.andrea,
     email: "camila.torres@employee.test",
     password: MOCK_PASSWORD_HASH,
-    company: "Intermediano Colombia SAS",
+    intermediano_company_id: ids.intermedianoCompany.colombia,
     ...timestamps,
   },
   {
@@ -25,7 +25,7 @@ export const employees = [
     name: "Lucas Almeida",
     email: "lucas.almeida@employee.test",
     password: MOCK_PASSWORD_HASH,
-    company: "Intermediano do Brasil Ltda",
+    intermediano_company_id: ids.intermedianoCompany.brasil,
     ...timestamps,
   },
 ] satisfies Prisma.employeesCreateManyInput[]

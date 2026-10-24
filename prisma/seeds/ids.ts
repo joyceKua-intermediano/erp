@@ -1,4 +1,5 @@
 export const ids = {
+  role: { admin: 1n, sales: 2n },
   user: { admin: 1n, salesLead: 2n },
   country: { colombia: 1n, brasil: 2n, canada: 3n },
   currency: { cop: 1n, brl: 2n, cad: 3n },
@@ -7,7 +8,7 @@ export const ids = {
   provisionType: { prima: 1n, cesantias: 2n, vacation: 3n },
   industryField: { logistics: 1n, software: 2n },
   bank: { bancolombia: 1n, itau: 2n },
-  intermedianoCompany: { colombia: 1n, canada: 2n },
+  intermedianoCompany: { colombia: 1n, canada: 2n, brasil: 3n },
   consultant: { andrea: 1n },
   partner: { mapleStaffing: 1n },
   company: { acmeLogistics: 1n, northwindSoftware: 2n },

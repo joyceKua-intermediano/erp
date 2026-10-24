@@ -59,6 +59,7 @@ export const contracts = [
   {
     id: ids.contract.lucasNorthwind,
     company_id: ids.company.northwindSoftware,
+    intermediano_company_id: ids.intermedianoCompany.brasil,
     employee_id: ids.employee.lucas,
     country_id: ids.country.brasil,
     country_work: "Brasil",

@@ -1,6 +1,7 @@
 "use client"
 
 import { ChevronsUpDownIcon, GlobeIcon } from "lucide-react"
+import { useSyncExternalStore } from "react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -11,17 +12,26 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { clusterIdSchema, clusters, getCluster } from "@/lib/clusters"
+import { useActiveCluster, useClusters } from "@/hooks/use-clusters"
+import { clusterIdSchema } from "@/lib/clusters"
 import { useUiStore } from "@/store/use-ui-store"
 
+function subscribeToNothing() {
+  return () => {}
+}
+
 export function ClusterSwitcher() {
-  const activeCluster = useUiStore((state) => state.activeCluster)
+  const { data: clusters, isPending, isError } = useClusters()
+  const activeCluster = useActiveCluster()
   const setActiveCluster = useUiStore((state) => state.setActiveCluster)
-  const activeLabel = activeCluster ? getCluster(activeCluster).label : "Select a cluster"
+  // Server HTML is always rendered as pending; the client cache may already be filled by the time this hydrates.
+  const isHydrated = useSyncExternalStore(subscribeToNothing, () => true, () => false)
+  const activeLabel =
+    activeCluster?.label ?? (!isHydrated || isPending ? "Loading clusters…" : "Select a cluster")
 
   function handleValueChange(value: unknown) {
     const parsed = clusterIdSchema.safeParse(value)
-    if (parsed.success) {
+    if (parsed.success && clusters?.some((cluster) => cluster.id === parsed.data)) {
       setActiveCluster(parsed.data)
     }
   }
@@ -50,8 +60,13 @@ export function ClusterSwitcher() {
       <DropdownMenuContent align="start" className="w-64">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Intermediano Group Companies</DropdownMenuLabel>
-          <DropdownMenuRadioGroup value={activeCluster ?? ""} onValueChange={handleValueChange}>
-            {clusters.map((cluster) => (
+          {isPending && <p className="px-2 py-1.5 text-sm text-muted-foreground">Loading…</p>}
+          {isError && <p className="px-2 py-1.5 text-sm text-muted-foreground">Couldn&apos;t load clusters.</p>}
+          {clusters?.length === 0 && (
+            <p className="px-2 py-1.5 text-sm text-muted-foreground">No companies found.</p>
+          )}
+          <DropdownMenuRadioGroup value={activeCluster?.id ?? ""} onValueChange={handleValueChange}>
+            {clusters?.map((cluster) => (
               <DropdownMenuRadioItem
                 key={cluster.id}
                 value={cluster.id}

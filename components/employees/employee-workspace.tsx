@@ -1,16 +1,17 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import {
   FileSignatureIcon,
   GlobeIcon,
+  PlusIcon,
   RefreshCwIcon,
   SearchIcon,
   UserCheckIcon,
   UsersIcon,
   XIcon,
 } from "lucide-react"
-import { cn } from "cn"
 import { ClusterSwitcher } from "@/components/cluster-switcher"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -25,24 +26,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useActiveCluster } from "@/hooks/use-clusters"
 import { useEmployees } from "@/hooks/use-employees"
-import { getCluster } from "@/lib/clusters"
-import { contractStatusLabels, type ClusterEmployee, type ContractStatus } from "@/lib/employees"
-import { useUiStore } from "@/store/use-ui-store"
-
-const statusBadgeClasses: Record<ContractStatus, string> = {
-  active: "border-transparent bg-primary text-primary-foreground",
-  pending_signature: "border-primary/40 bg-primary/5 text-primary",
-  upcoming: "border-transparent bg-secondary text-secondary-foreground",
-  ended: "border-border text-muted-foreground",
-  none: "border-dashed border-border text-muted-foreground",
-}
-
-const dateFormatter = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" })
-
-function formatDate(value: string | null) {
-  return value ? dateFormatter.format(new Date(`${value}T00:00:00Z`)) : "—"
-}
+import type { ClusterEmployee } from "@/lib/employees"
+import { ContractStatusBadge, formatContractDate } from "./contract-status-badge"
+import { EmployeeFormSheet } from "./employee-form-sheet"
 
 function matchesSearch(employee: ClusterEmployee, query: string) {
   const needle = query.trim().toLowerCase()
@@ -52,40 +40,36 @@ function matchesSearch(employee: ClusterEmployee, query: string) {
     .some((value) => value.toLowerCase().includes(needle))
 }
 
-export function EmployeeWorkspace() {
-  const activeCluster = useUiStore((state) => state.activeCluster)
-
-  if (!activeCluster) {
-    return (
-      <Card className="animate-in fade-in-0 duration-300 [--card-spacing:--spacing(10)]">
-        <CardContent className="flex flex-col items-center gap-4 text-center">
-          <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <GlobeIcon className="size-6" />
-          </span>
-          <div className="flex flex-col gap-1">
-            <h2 className="font-heading text-lg font-semibold">Choose a cluster to begin</h2>
-            <p className="max-w-md text-sm text-muted-foreground">
-              Employee records are scoped to one Intermediano legal entity at a time.
-            </p>
-          </div>
-          <ClusterSwitcher />
-        </CardContent>
-      </Card>
-    )
-  }
-
-  return <ClusterEmployeesPanel key={activeCluster} clusterLabel={getCluster(activeCluster).label} />
+export function ChooseClusterCard() {
+  return (
+    <Card className="animate-in fade-in-0 duration-300 [--card-spacing:--spacing(10)]">
+      <CardContent className="flex flex-col items-center gap-4 text-center">
+        <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <GlobeIcon className="size-6" />
+        </span>
+        <div className="flex flex-col gap-1">
+          <h2 className="font-heading text-lg font-semibold">Choose a cluster to begin</h2>
+          <p className="max-w-md text-sm text-muted-foreground">
+            Employee records are scoped to one Intermediano legal entity at a time.
+          </p>
+        </div>
+        <ClusterSwitcher />
+      </CardContent>
+    </Card>
+  )
 }
 
-function ClusterEmployeesPanel({ clusterLabel }: { clusterLabel: string }) {
-  const [search, setSearch] = useState("")
-  const { data, isPending, isError, isFetching, refetch } = useEmployees()
-
-  const employees = data ?? []
-  const visibleEmployees = employees.filter((employee) => matchesSearch(employee, search))
+function EmployeeStats({
+  employees,
+  isPending,
+  clusterLabel,
+}: {
+  employees: ClusterEmployee[]
+  isPending: boolean
+  clusterLabel: string
+}) {
   const activeCount = employees.filter((employee) => employee.contractStatus === "active").length
   const pendingCount = employees.filter((employee) => employee.contractStatus === "pending_signature").length
-  const trimmedSearch = search.trim()
 
   const stats = [
     { label: "Employees", value: employees.length, icon: UsersIcon },
@@ -94,26 +78,66 @@ function ClusterEmployeesPanel({ clusterLabel }: { clusterLabel: string }) {
   ]
 
   return (
+    <section className="grid gap-4 sm:grid-cols-3" aria-label={`${clusterLabel} summary`}>
+      {stats.map((stat) => (
+        <Card key={stat.label} className="[--card-spacing:--spacing(5)]">
+          <CardContent className="flex items-center gap-4">
+            <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <stat.icon className="size-5" />
+            </span>
+            <div className="flex flex-col">
+              <span className="text-xs text-muted-foreground">{stat.label}</span>
+              {isPending ? (
+                <Skeleton className="mt-1 h-6 w-10" />
+              ) : (
+                <span className="text-2xl font-semibold tabular-nums">{stat.value}</span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </section>
+  )
+}
+
+export function EmployeeSummary() {
+  const activeCluster = useActiveCluster()
+
+  if (!activeCluster) return <ChooseClusterCard />
+
+  return <ClusterEmployeeSummary key={activeCluster.id} clusterLabel={activeCluster.label} />
+}
+
+function ClusterEmployeeSummary({ clusterLabel }: { clusterLabel: string }) {
+  const { data, isPending } = useEmployees()
+
+  return <EmployeeStats employees={data ?? []} isPending={isPending} clusterLabel={clusterLabel} />
+}
+
+type EmployeeWorkspaceProps = {
+  canManage: boolean
+}
+
+export function EmployeeWorkspace({ canManage }: EmployeeWorkspaceProps) {
+  const activeCluster = useActiveCluster()
+
+  if (!activeCluster) return <ChooseClusterCard />
+
+  return <ClusterEmployeesPanel key={activeCluster.id} clusterLabel={activeCluster.label} canManage={canManage} />
+}
+
+function ClusterEmployeesPanel({ clusterLabel, canManage }: { clusterLabel: string; canManage: boolean }) {
+  const [search, setSearch] = useState("")
+  const [sheet, setSheet] = useState({ open: false, key: 0 })
+  const { data, isPending, isError, isFetching, refetch } = useEmployees()
+
+  const employees = data ?? []
+  const visibleEmployees = employees.filter((employee) => matchesSearch(employee, search))
+  const trimmedSearch = search.trim()
+
+  return (
     <div className="flex animate-in flex-col gap-6 duration-300 fade-in-0 slide-in-from-bottom-2">
-      <section className="grid gap-4 sm:grid-cols-3" aria-label={`${clusterLabel} summary`}>
-        {stats.map((stat) => (
-          <Card key={stat.label} className="[--card-spacing:--spacing(5)]">
-            <CardContent className="flex items-center gap-4">
-              <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <stat.icon className="size-5" />
-              </span>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground">{stat.label}</span>
-                {isPending ? (
-                  <Skeleton className="mt-1 h-6 w-10" />
-                ) : (
-                  <span className="text-2xl font-semibold tabular-nums">{stat.value}</span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
+      <EmployeeStats employees={employees} isPending={isPending} clusterLabel={clusterLabel} />
 
       <Card className="gap-0 py-0">
         <CardHeader className="gap-4 border-b py-5 sm:grid-cols-[1fr_auto]">
@@ -124,18 +148,26 @@ function ClusterEmployeesPanel({ clusterLabel }: { clusterLabel: string }) {
                 {clusterLabel}
               </Badge>
             </CardTitle>
-            <CardDescription>Everyone with a contract under this legal entity.</CardDescription>
+            <CardDescription>Everyone employed by this legal entity.</CardDescription>
           </div>
           <div className="flex flex-col gap-2 sm:items-end">
-            <div className="relative w-full sm:w-72">
-              <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search name, email, position…"
-                aria-label="Search employees"
-                className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
-              />
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="relative w-full sm:w-72">
+                <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search name, email, position…"
+                  aria-label="Search employees"
+                  className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
+                />
+              </div>
+              {canManage && (
+                <Button onClick={() => setSheet((current) => ({ open: true, key: current.key + 1 }))}>
+                  <PlusIcon />
+                  Add employee
+                </Button>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge className="bg-primary/10 text-primary">
@@ -214,7 +246,7 @@ function ClusterEmployeesPanel({ clusterLabel }: { clusterLabel: string }) {
                   <TableRow className="hover:bg-transparent">
                     <TableCell colSpan={5} className="py-12 text-center text-sm text-muted-foreground">
                       {employees.length === 0
-                        ? `No employees have contracts under ${clusterLabel} yet.`
+                        ? `No employees in ${clusterLabel} yet.`
                         : "No employees match your search."}
                     </TableCell>
                   </TableRow>
@@ -222,22 +254,20 @@ function ClusterEmployeesPanel({ clusterLabel }: { clusterLabel: string }) {
                   visibleEmployees.map((employee) => (
                     <TableRow key={employee.id} className="hover:bg-primary/5">
                       <TableCell className="pl-6">
-                        <div className="flex flex-col">
-                          <span className="font-medium">{employee.name}</span>
+                        <Link href={`/admin/employees/${employee.id}`} className="group flex flex-col">
+                          <span className="font-medium group-hover:text-primary">{employee.name}</span>
                           <span className="text-xs text-muted-foreground">{employee.email}</span>
-                        </div>
+                        </Link>
                       </TableCell>
                       <TableCell>{employee.position ?? "—"}</TableCell>
                       <TableCell className="hidden text-muted-foreground md:table-cell">
                         {employee.clientCompany ?? "—"}
                       </TableCell>
                       <TableCell className="hidden text-muted-foreground tabular-nums lg:table-cell">
-                        {formatDate(employee.contractStart)}
+                        {formatContractDate(employee.contractStart)}
                       </TableCell>
                       <TableCell className="pr-6">
-                        <Badge variant="outline" className={cn(statusBadgeClasses[employee.contractStatus])}>
-                          {contractStatusLabels[employee.contractStatus]}
-                        </Badge>
+                        <ContractStatusBadge status={employee.contractStatus} />
                       </TableCell>
                     </TableRow>
                   ))
@@ -247,6 +277,16 @@ function ClusterEmployeesPanel({ clusterLabel }: { clusterLabel: string }) {
           )}
         </CardContent>
       </Card>
+
+      {canManage && (
+        <EmployeeFormSheet
+          open={sheet.open}
+          employee={null}
+          clusterLabel={clusterLabel}
+          formKey={sheet.key}
+          onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
+        />
+      )}
     </div>
   )
 }
