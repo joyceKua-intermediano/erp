@@ -9,6 +9,12 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"], {
     error: 'must be "development", "test" or "production"',
   }),
+  AUTH_SECRET: z.string().min(32, { error: "must be at least 32 characters" }),
+  AUTH_MICROSOFT_ENTRA_ID_ID: z.string().min(1, { error: "must not be empty" }),
+  AUTH_MICROSOFT_ENTRA_ID_SECRET: z.string().min(1, { error: "must not be empty" }),
+  AUTH_MICROSOFT_ENTRA_ID_ISSUER: z.url({ error: "must be the tenant issuer URL" }),
+  AUTH_GOOGLE_ID: z.string().optional(),
+  AUTH_GOOGLE_SECRET: z.string().optional(),
 })
 
 export type Env = Readonly<z.infer<typeof envSchema>>
@@ -46,3 +52,5 @@ function loadEnv(): Env {
 }
 
 export const env: Env = loadEnv()
+
+export const isGoogleEnabled = Boolean(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET)

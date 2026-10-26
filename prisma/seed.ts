@@ -23,10 +23,14 @@ import {
   partners,
   paymentProvisions,
   payrollCosts,
+  permissions,
   personalInformation,
   provinces,
   provisionTypes,
   quotations,
+  roleClusters,
+  rolePermissions,
+  roles,
   socialSecurityInfos,
   staffTrackers,
   supplementaryContractDetails,
@@ -93,6 +97,20 @@ async function main() {
 
     await prisma.$transaction(
       async (tx) => {
+        await seedStep("roles", roles, (row) =>
+          tx.roles.upsert({ where: { id: row.id }, create: row, update: row }),
+        )
+        await seedStep("permissions", permissions, (row) =>
+          tx.permissions.upsert({ where: { id: row.id }, create: row, update: row }),
+        )
+        for (const row of rolePermissions) {
+          await tx.role_permissions.upsert({
+            where: { role_id_permission_id: { role_id: row.role_id, permission_id: row.permission_id } },
+            create: row,
+            update: {},
+          })
+        }
+        console.log(`  ${"role_permissions".padEnd(32)} ${rolePermissions.length}`)
         await seedStep("users", users, (row) =>
           tx.users.upsert({ where: { id: row.id }, create: row, update: row }),
         )
@@ -120,6 +138,19 @@ async function main() {
         await seedStep("intermediano_companies", intermedianoCompanies, (row) =>
           tx.intermediano_companies.upsert({ where: { id: row.id }, create: row, update: row }),
         )
+        for (const row of roleClusters) {
+          await tx.role_clusters.upsert({
+            where: {
+              role_id_intermediano_company_id: {
+                role_id: row.role_id,
+                intermediano_company_id: row.intermediano_company_id,
+              },
+            },
+            create: row,
+            update: {},
+          })
+        }
+        console.log(`  ${"role_clusters".padEnd(32)} ${roleClusters.length}`)
         await seedStep("consultants", consultants, (row) =>
           tx.consultants.upsert({ where: { id: row.id }, create: row, update: row }),
         )

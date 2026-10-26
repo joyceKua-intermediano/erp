@@ -8,6 +8,7 @@ export const users = [
     email: "admin@intermediano.test",
     email_verified_at: SEEDED_AT,
     password: MOCK_PASSWORD_HASH,
+    role_id: ids.role.admin,
     ...timestamps,
   },
   {
@@ -16,6 +17,7 @@ export const users = [
     email: "valentina.rios@intermediano.test",
     email_verified_at: SEEDED_AT,
     password: MOCK_PASSWORD_HASH,
+    role_id: ids.role.sales,
     ...timestamps,
   },
 ] satisfies Prisma.usersCreateManyInput[]

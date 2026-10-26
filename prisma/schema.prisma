@@ -94,7 +94,7 @@ model consultants {
   email          String?          @db.VarChar(255)
   mobile_number  String?          @db.VarChar(255)
   address        String?          @db.Text
-  employeer      String?          @db.VarChar(255)
+  employer       String?          @map("employeer") @db.VarChar(255)
   created_at     DateTime?        @db.Timestamp(0)
   updated_at     DateTime?        @db.Timestamp(0)
   deleted_at     DateTime?        @db.Timestamp(0)
@@ -330,26 +330,28 @@ model employee_files {
 }
 
 model employees {
-  id                   BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
-  name                 String                 @db.VarChar(255)
-  consultant_id        BigInt?                @db.UnsignedBigInt
-  email                String                 @unique(map: "employees_email_unique") @db.VarChar(255)
-  password             String                 @db.VarChar(255)
-  company              String                 @db.VarChar(255)
-  deleted_at           DateTime?              @db.Timestamp(0)
-  created_at           DateTime?              @db.Timestamp(0)
-  updated_at           DateTime?              @db.Timestamp(0)
-  contracts            contracts[]
-  documents            documents[]
-  employee_expenses    employee_expenses[]
-  consultants          consultants?           @relation(fields: [consultant_id], references: [id], onUpdate: NoAction, map: "employees_consultant_id_foreign")
-  invoices             invoices[]
-  monthly_timesheets   monthly_timesheets[]
-  payslips             payslips[]
-  personal_information personal_information[]
-  vacation_requests    vacation_requests[]
+  id                      BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  name                    String                  @db.VarChar(255)
+  consultant_id           BigInt?                 @db.UnsignedBigInt
+  email                   String                  @unique(map: "employees_email_unique") @db.VarChar(255)
+  password                String                  @db.VarChar(255)
+  intermediano_company_id BigInt?                 @db.UnsignedBigInt
+  deleted_at              DateTime?               @db.Timestamp(0)
+  created_at              DateTime?               @db.Timestamp(0)
+  updated_at              DateTime?               @db.Timestamp(0)
+  contracts               contracts[]
+  documents               documents[]
+  employee_expenses       employee_expenses[]
+  consultants             consultants?            @relation(fields: [consultant_id], references: [id], onUpdate: NoAction, map: "employees_consultant_id_foreign")
+  intermediano_companies  intermediano_companies? @relation(fields: [intermediano_company_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "employees_intermediano_company_id_foreign")
+  invoices                invoices[]
+  monthly_timesheets      monthly_timesheets[]
+  payslips                payslips[]
+  personal_information    personal_information[]
+  vacation_requests       vacation_requests[]
 
   @@index([consultant_id], map: "employees_consultant_id_foreign")
+  @@index([intermediano_company_id], map: "employees_intermediano_company_id_foreign")
 }
 
 model failed_jobs {
@@ -403,8 +405,11 @@ model intermediano_companies {
   created_at     DateTime?        @db.Timestamp(0)
   updated_at     DateTime?        @db.Timestamp(0)
   contracts      contracts[]
+  employees      employees[]
   countries      countries        @relation(fields: [country_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "intermediano_companies_country_id_foreign")
   staff_trackers staff_trackers[]
+  role_clusters  role_clusters[]
+  templates      templates[]
 
   @@index([country_id], map: "intermediano_companies_country_id_foreign")
 }
@@ -526,26 +531,6 @@ model migrations {
   batch     Int
 }
 
-model model_has_permissions {
-  permission_id BigInt      @db.UnsignedBigInt
-  model_type    String      @db.VarChar(255)
-  model_id      BigInt      @db.UnsignedBigInt
-  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "model_has_permissions_permission_id_foreign")
-
-  @@id([permission_id, model_id, model_type])
-  @@index([model_id, model_type], map: "model_has_permissions_model_id_model_type_index")
-}
-
-model model_has_roles {
-  role_id    BigInt @db.UnsignedBigInt
-  model_type String @db.VarChar(255)
-  model_id   BigInt @db.UnsignedBigInt
-  roles      roles  @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "model_has_roles_role_id_foreign")
-
-  @@id([role_id, model_id, model_type])
-  @@index([model_id, model_type], map: "model_has_roles_model_id_model_type_index")
-}
-
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model monthly_timesheets {
   id          BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
@@ -664,15 +649,12 @@ model payslips {
 }
 
 model permissions {
-  id                    BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
-  name                  String                  @db.VarChar(255)
-  guard_name            String                  @db.VarChar(255)
-  created_at            DateTime?               @db.Timestamp(0)
-  updated_at            DateTime?               @db.Timestamp(0)
-  model_has_permissions model_has_permissions[]
-  role_has_permissions  role_has_permissions[]
-
-  @@unique([name, guard_name], map: "permissions_name_guard_name_unique")
+  id               BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  name             String             @unique(map: "permissions_name_unique") @db.VarChar(100)
+  description      String?            @db.VarChar(255)
+  created_at       DateTime?          @db.Timestamp(0)
+  updated_at       DateTime?          @db.Timestamp(0)
+  role_permissions role_permissions[]
 }
 
 model personal_information {
@@ -771,26 +753,36 @@ model quotations {
   @@index([province_id], map: "quotations_province_id_foreign")
 }
 
-model role_has_permissions {
-  permission_id BigInt      @db.UnsignedBigInt
+model role_permissions {
   role_id       BigInt      @db.UnsignedBigInt
-  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "role_has_permissions_permission_id_foreign")
-  roles         roles       @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "role_has_permissions_role_id_foreign")
+  permission_id BigInt      @db.UnsignedBigInt
+  roles         roles       @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "role_permissions_role_id_foreign")
+  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "role_permissions_permission_id_foreign")
 
-  @@id([permission_id, role_id])
-  @@index([role_id], map: "role_has_permissions_role_id_foreign")
+  @@id([role_id, permission_id])
+  @@index([permission_id], map: "role_permissions_permission_id_foreign")
+}
+
+model role_clusters {
+  role_id                 BigInt                 @db.UnsignedBigInt
+  intermediano_company_id BigInt                 @db.UnsignedBigInt
+  roles                   roles                  @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "role_clusters_role_id_foreign")
+  intermediano_companies  intermediano_companies @relation(fields: [intermediano_company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "role_clusters_intermediano_company_id_foreign")
+
+  @@id([role_id, intermediano_company_id])
+  @@index([intermediano_company_id], map: "role_clusters_intermediano_company_id_foreign")
 }
 
 model roles {
-  id                   BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
-  name                 String                 @db.VarChar(255)
-  guard_name           String                 @db.VarChar(255)
-  created_at           DateTime?              @db.Timestamp(0)
-  updated_at           DateTime?              @db.Timestamp(0)
-  model_has_roles      model_has_roles[]
-  role_has_permissions role_has_permissions[]
-
-  @@unique([name, guard_name], map: "roles_name_guard_name_unique")
+  id               BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  name             String             @unique(map: "roles_name_unique") @db.VarChar(100)
+  description      String?            @db.VarChar(255)
+  all_clusters     Boolean            @default(true)
+  created_at       DateTime?          @db.Timestamp(0)
+  updated_at       DateTime?          @db.Timestamp(0)
+  users            users[]
+  role_permissions role_permissions[]
+  role_clusters    role_clusters[]
 }
 
 model sessions {
@@ -871,17 +863,23 @@ model supplementary_contract_details {
 }
 
 model templates {
-  id           BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
-  name         String      @db.VarChar(255)
-  country_id   BigInt?     @db.UnsignedBigInt
-  view_path    String?     @db.VarChar(255)
-  body_content String?     @db.LongText
-  created_at   DateTime?   @db.Timestamp(0)
-  updated_at   DateTime?   @db.Timestamp(0)
-  contracts    contracts[]
-  countries    countries?  @relation(fields: [country_id], references: [id], onUpdate: NoAction, map: "templates_country_id_foreign")
+  id                      BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  name                    String                  @db.VarChar(255)
+  country_id              BigInt?                 @db.UnsignedBigInt
+  view_path               String?                 @db.VarChar(255)
+  body_content            String?                 @db.LongText
+  typst_source            String?                 @db.LongText
+  intermediano_company_id BigInt?                 @db.UnsignedBigInt
+  contract_type           String?                 @db.VarChar(50)
+  deleted_at              DateTime?               @db.Timestamp(0)
+  created_at              DateTime?               @db.Timestamp(0)
+  updated_at              DateTime?               @db.Timestamp(0)
+  contracts               contracts[]
+  countries               countries?              @relation(fields: [country_id], references: [id], onUpdate: NoAction, map: "templates_country_id_foreign")
+  intermediano_companies  intermediano_companies? @relation(fields: [intermediano_company_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "templates_intermediano_company_id_foreign")
 
   @@index([country_id], map: "templates_country_id_foreign")
+  @@index([intermediano_company_id], map: "templates_intermediano_company_id_foreign")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -897,12 +895,16 @@ model users {
   custom_fields                        String?           @db.LongText
   avatar_url                           String?           @db.VarChar(255)
   welcome_valid_until                  DateTime?         @db.Timestamp(0)
+  role_id                              BigInt?           @db.UnsignedBigInt
+  roles                                roles?            @relation(fields: [role_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "users_role_id_foreign")
   companies                            companies[]
   contacts                             contacts[]
   contracts                            contracts[]
   industry_fields                      industry_fields[]
   leads_leads_opportunity_ownerTousers leads[]           @relation("leads_opportunity_ownerTousers")
   leads_leads_user_idTousers           leads[]           @relation("leads_user_idTousers")
+
+  @@index([role_id], map: "users_role_id_foreign")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments

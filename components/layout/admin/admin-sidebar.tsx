@@ -5,8 +5,10 @@ import { usePathname } from "next/navigation"
 import {
   BriefcaseBusinessIcon,
   Building2Icon,
+  BuildingIcon,
   CalendarClockIcon,
   CoinsIcon,
+  FileCodeIcon,
   FileSignatureIcon,
   FileTextIcon,
   HandshakeIcon,
@@ -31,9 +33,8 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { getCluster } from "@/lib/clusters"
+import { useActiveCluster } from "@/hooks/use-clusters"
 import { isActivePath, type NavItem } from "@/lib/navigation"
-import { useUiStore } from "@/store/use-ui-store"
 
 const overviewItems: NavItem[] = [
   { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboardIcon },
@@ -71,6 +72,8 @@ const sharedGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Settings",
     items: [
+      { title: "Intermediano companies", href: "/admin/intermediano-companies", icon: BuildingIcon },
+      { title: "Contract templates", href: "/admin/templates", icon: FileCodeIcon },
       { title: "Users & roles", href: "/admin/users", icon: ShieldCheckIcon },
       { title: "Configuration", href: "/admin/settings", icon: SettingsIcon },
     ],
@@ -103,8 +106,8 @@ function NavGroup({ label, items, pathname }: { label: string; items: NavItem[];
 
 export function AdminSidebar() {
   const pathname = usePathname()
-  const activeCluster = useUiStore((state) => state.activeCluster)
-  const clusterLabel = activeCluster ? getCluster(activeCluster).label : "Cluster workspace"
+  const activeCluster = useActiveCluster()
+  const clusterLabel = activeCluster?.label ?? "Cluster workspace"
 
   return (
     <Sidebar variant="inset" collapsible="icon">

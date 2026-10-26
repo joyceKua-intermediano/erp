@@ -1,3 +1,4 @@
+export * from "./access.seed"
 export * from "./contracts.seed"
 export * from "./crm.seed"
 export * from "./finance.seed"

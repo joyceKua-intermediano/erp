@@ -6,7 +6,7 @@ import { useUiStore } from "@/store/use-ui-store"
 import { AdminHeader } from "./admin-header"
 import { AdminSidebar } from "./admin-sidebar"
 
-export function AdminShell({ children }: { children: ReactNode }) {
+export function AdminShell({ children, userMenu }: { children: ReactNode; userMenu?: ReactNode }) {
   const isSidebarOpen = useUiStore((state) => state.isSidebarOpen)
   const setSidebarOpen = useUiStore((state) => state.setSidebarOpen)
 
@@ -14,7 +14,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     <SidebarProvider open={isSidebarOpen} onOpenChange={setSidebarOpen}>
       <AdminSidebar />
       <SidebarInset>
-        <AdminHeader />
+        <AdminHeader userMenu={userMenu} />
         <div className="flex flex-1 flex-col gap-8 px-4 pt-8 pb-12 md:px-8">{children}</div>
       </SidebarInset>
     </SidebarProvider>

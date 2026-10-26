@@ -24,6 +24,17 @@ export const intermedianoCompanies = [
     country_id: ids.country.canada,
     ...timestamps,
   },
+  {
+    id: ids.intermedianoCompany.brasil,
+    name: "Intermediano do Brasil Ltda",
+    contact_name: "Beatriz Souza",
+    mobile_number: "+55 11 90000 0001",
+    email: "brasil@intermediano.test",
+    address: "Av. Paulista 1000, Sao Paulo",
+    tax_id: "00.000.000/0001-00",
+    country_id: ids.country.brasil,
+    ...timestamps,
+  },
 ] satisfies Prisma.intermediano_companiesCreateManyInput[]
 
 export const consultants = [
