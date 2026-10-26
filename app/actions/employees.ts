@@ -3,41 +3,20 @@
 import { randomBytes } from "node:crypto";
 import type { ActionResult } from "@/lib/action-result";
 import { requireClusterPermission } from "@/lib/auth";
+import { deriveContractStatus } from "@/lib/contracts";
 import {
   employeeFormSchema,
   employeeIdSchema,
   type ClusterEmployee,
   type ConsultantOption,
-  type ContractStatus,
   type EmployeeDetail,
   type EmployeeFormInput,
 } from "@/lib/employees";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
-const PENDING_SIGNATURE = "Pending Signature";
-
-type ContractSnapshot = {
-  start_date: Date | null;
-  end_date: Date | null;
-  signature: string | null;
-  admin_signature: string | null;
-};
-
 function toIsoDate(value: Date | null) {
   return value ? value.toISOString().slice(0, 10) : null;
-}
-
-function isPending(signature: string | null) {
-  return !signature || signature === PENDING_SIGNATURE;
-}
-
-function deriveContractStatus(contract: ContractSnapshot | undefined, now: Date): ContractStatus {
-  if (!contract) return "none";
-  if (contract.end_date && contract.end_date < now) return "ended";
-  if (contract.start_date && contract.start_date > now) return "upcoming";
-  if (isPending(contract.signature) || isPending(contract.admin_signature)) return "pending_signature";
-  return "active";
 }
 
 export async function getClusterEmployees(clusterId: string): Promise<ClusterEmployee[]> {

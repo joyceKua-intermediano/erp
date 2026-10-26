@@ -8,6 +8,7 @@ import {
   BuildingIcon,
   CalendarClockIcon,
   CoinsIcon,
+  FileCodeIcon,
   FileSignatureIcon,
   FileTextIcon,
   HandshakeIcon,
@@ -72,6 +73,7 @@ const sharedGroups: { label: string; items: NavItem[] }[] = [
     label: "Settings",
     items: [
       { title: "Intermediano companies", href: "/admin/intermediano-companies", icon: BuildingIcon },
+      { title: "Contract templates", href: "/admin/templates", icon: FileCodeIcon },
       { title: "Users & roles", href: "/admin/users", icon: ShieldCheckIcon },
       { title: "Configuration", href: "/admin/settings", icon: SettingsIcon },
     ],

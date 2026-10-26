@@ -200,7 +200,11 @@ function EmployeeDetailContent({ employee, canManage }: { employee: EmployeeDeta
               ) : (
                 employee.contracts.map((contract) => (
                   <TableRow key={contract.id} className="hover:bg-primary/5">
-                    <TableCell className="pl-6 font-medium">{contract.jobTitle ?? "—"}</TableCell>
+                    <TableCell className="pl-6 font-medium">
+                      <Link href={`/admin/contracts/${contract.id}`} className="hover:text-primary">
+                        {contract.jobTitle ?? "Untitled position"}
+                      </Link>
+                    </TableCell>
                     <TableCell className="hidden text-muted-foreground md:table-cell">
                       {contract.clientCompany ?? "—"}
                     </TableCell>

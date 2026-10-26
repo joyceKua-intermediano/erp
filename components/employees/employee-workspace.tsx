@@ -40,7 +40,11 @@ function matchesSearch(employee: ClusterEmployee, query: string) {
     .some((value) => value.toLowerCase().includes(needle))
 }
 
-export function ChooseClusterCard() {
+export function ChooseClusterCard({
+  description = "Employee records are scoped to one Intermediano legal entity at a time.",
+}: {
+  description?: string
+}) {
   return (
     <Card className="animate-in fade-in-0 duration-300 [--card-spacing:--spacing(10)]">
       <CardContent className="flex flex-col items-center gap-4 text-center">
@@ -49,9 +53,7 @@ export function ChooseClusterCard() {
         </span>
         <div className="flex flex-col gap-1">
           <h2 className="font-heading text-lg font-semibold">Choose a cluster to begin</h2>
-          <p className="max-w-md text-sm text-muted-foreground">
-            Employee records are scoped to one Intermediano legal entity at a time.
-          </p>
+          <p className="max-w-md text-sm text-muted-foreground">{description}</p>
         </div>
         <ClusterSwitcher />
       </CardContent>

@@ -1,12 +1,23 @@
+import { readFileSync } from "node:fs"
+import path from "node:path"
 import type { Prisma } from "../../lib/generated/prisma/client"
 import { clusterNames, ids, timestamps } from "./ids"
+
+// The seed runs from the project root (`prisma db seed`).
+const colombiaOrdinaryTypst = readFileSync(
+  path.join(process.cwd(), "prisma/seeds/typst/colombia-ordinary-employee.typ"),
+  "utf8"
+)
 
 export const templates = [
   {
     id: ids.template.colombiaOrdinary,
     name: "Colombia - Ordinary Employment Contract",
     country_id: ids.country.colombia,
+    intermediano_company_id: ids.intermedianoCompany.colombia,
+    contract_type: "employee",
     body_content: "<p>Contract between {{intermediano_company}} and {{employee_name}}.</p>",
+    typst_source: colombiaOrdinaryTypst,
     ...timestamps,
   },
 ] satisfies Prisma.templatesCreateManyInput[]
@@ -25,7 +36,7 @@ export const contracts = [
     translated_position: "Analista de Operaciones",
     start_date: new Date("2026-02-01"),
     gross_salary: "6500000.00",
-    contract_type: "Indefinite",
+    contract_type: "employee",
     contract_version: "v1",
     cluster_name: clusterNames.colombia,
     is_sent_to_employee: true,
@@ -49,7 +60,7 @@ export const contracts = [
     translated_position: "Especialista de Nomina",
     start_date: new Date("2026-03-02"),
     gross_salary: "5200000.00",
-    contract_type: "Indefinite",
+    contract_type: "employee",
     contract_version: "v1",
     cluster_name: clusterNames.colombia,
     is_sent_to_employee: true,
@@ -67,7 +78,7 @@ export const contracts = [
     translated_position: "Engenheiro Frontend",
     start_date: new Date("2025-11-03"),
     gross_salary: "14500.00",
-    contract_type: "CLT",
+    contract_type: "employee",
     contract_version: "v1",
     cluster_name: clusterNames.brasil,
     is_sent_to_employee: true,

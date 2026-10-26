@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
     agentFeedback: true,
   },
   cacheComponents: true,
+  serverExternalPackages: ["@myriaddreamin/typst-ts-node-compiler"],
+  // Contract PDFs compile against the Typst library and fonts read from disk at runtime.
+  outputFileTracingIncludes: {
+    "/api/**": ["./typst/**/*"],
+  },
   partialPrefetching: true,
   turbopack: {
     rules: {
