@@ -1,13 +1,6 @@
-import { readFileSync } from "node:fs"
-import path from "node:path"
 import type { Prisma } from "../../lib/generated/prisma/client"
 import { clusterNames, ids, timestamps } from "./ids"
-
-// The seed runs from the project root (`prisma db seed`).
-const colombiaOrdinaryTypst = readFileSync(
-  path.join(process.cwd(), "prisma/seeds/typst/colombia-ordinary-employee.typ"),
-  "utf8"
-)
+import { colombiaOrdinaryEmployee } from "./templates/colombia-ordinary-employee"
 
 export const templates = [
   {
@@ -17,7 +10,8 @@ export const templates = [
     intermediano_company_id: ids.intermedianoCompany.colombia,
     contract_type: "employee",
     body_content: "<p>Contract between {{intermediano_company}} and {{employee_name}}.</p>",
-    typst_source: colombiaOrdinaryTypst,
+    content_blocks: JSON.stringify(colombiaOrdinaryEmployee),
+    typst_source: null,
     ...timestamps,
   },
 ] satisfies Prisma.templatesCreateManyInput[]

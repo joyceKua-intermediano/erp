@@ -41,11 +41,14 @@ function matchesSearch(template: ContractTemplate, query: string) {
     .some((value) => value.toLowerCase().includes(needle))
 }
 
-export function FormatBadge({ template }: { template: Pick<ContractTemplate, "hasTypstSource" | "hasLegacyContent"> }) {
-  if (template.hasTypstSource) {
-    return <Badge className="border-transparent bg-primary/10 text-primary">Typst</Badge>
+export function FormatBadge({ template }: { template: Pick<ContractTemplate, "format"> }) {
+  if (template.format === "blocks") {
+    return <Badge className="border-transparent bg-primary/10 text-primary">Ready</Badge>
   }
-  if (template.hasLegacyContent) {
+  if (template.format === "code") {
+    return <Badge className="border-transparent bg-secondary text-secondary-foreground">Ready · code</Badge>
+  }
+  if (template.format === "legacy") {
     return (
       <Badge variant="outline" className="gap-1 border-dashed text-muted-foreground">
         <TriangleAlertIcon className="size-3" />
@@ -74,18 +77,15 @@ export function TemplatesWorkspace({ canManage }: TemplatesWorkspaceProps) {
 
   const templates = data ?? []
   const visibleTemplates = templates.filter((template) => matchesSearch(template, search))
-  const legacyOnlyCount = templates.filter((template) => !template.hasTypstSource && template.hasLegacyContent).length
+  const legacyOnlyCount = templates.filter((template) => template.format === "legacy").length
+  const readyCount = templates.filter((template) => template.format === "blocks" || template.format === "code").length
 
   return (
     <div className="flex animate-in flex-col gap-6 duration-300 fade-in-0 slide-in-from-bottom-2">
       <section className="grid gap-4 sm:grid-cols-3" aria-label="Contract templates summary">
         {[
           { label: "Templates", value: templates.length, icon: FileTextIcon },
-          {
-            label: "Ready for PDF (Typst)",
-            value: templates.filter((template) => template.hasTypstSource).length,
-            icon: FileCodeIcon,
-          },
+          { label: "Ready for PDF", value: readyCount, icon: FileCodeIcon },
           { label: "Legacy only, to port", value: legacyOnlyCount, icon: TriangleAlertIcon },
         ].map((stat) => (
           <Card key={stat.label} className="[--card-spacing:--spacing(5)]">
@@ -111,7 +111,7 @@ export function TemplatesWorkspace({ canManage }: TemplatesWorkspaceProps) {
           <div className="flex flex-col gap-1">
             <CardTitle>Contract templates</CardTitle>
             <CardDescription>
-              Typst documents that turn a contract into its PDF. Each cluster can have its own format.
+              The documents that turn a contract into its PDF. Each cluster can have its own format.
             </CardDescription>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

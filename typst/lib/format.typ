@@ -1,5 +1,15 @@
 // Small helpers for printing contract data.
 
+// Reads a dotted path such as "contract.endDate.long", returning none if any step is missing.
+#let lookup(value, path) = {
+  let current = value
+  for key in path.split(".") {
+    if type(current) != dictionary { return none }
+    current = current.at(key, default: none)
+  }
+  current
+}
+
 // Prints a value, or a blank line when it's missing, so gaps stand out in drafts.
 #let field(value, placeholder: "____________") = {
   if value == none or value == "" { placeholder } else { value }
@@ -23,12 +33,19 @@
 }
 
 // Two columns side by side: the contract language on the left, the translation on the right.
-#let bilingual(left, right, right-lang: "en") = grid(
-  columns: (1fr, 1fr),
-  column-gutter: 1.4em,
-  left,
-  text(lang: right-lang, right),
-)
+// Rows with automatic height may split across pages, so long clauses never leave a gap at the bottom of a page.
+#let bilingual(left, right, right-lang: "en", bordered: false) = {
+  let row = grid(
+    columns: (1fr, 1fr),
+    column-gutter: if bordered { 0pt } else { 1.4em },
+    stroke: if bordered { 0.5pt + luma(170) } else { none },
+    inset: if bordered { (x: 7pt, y: 6pt) } else { 0pt },
+    left,
+    text(lang: right-lang, right),
+  )
+  // Bordered rows sit flush so consecutive clauses read as one table, like the legacy contracts.
+  if bordered { block(above: 0pt, below: 0pt, row) } else { row }
+}
 
 // A label/value table, one row per entry: ((label, value), ...).
 #let facts(rows) = {

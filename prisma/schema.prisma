@@ -869,6 +869,7 @@ model templates {
   view_path               String?                 @db.VarChar(255)
   body_content            String?                 @db.LongText
   typst_source            String?                 @db.LongText
+  content_blocks          String?                 @db.LongText
   intermediano_company_id BigInt?                 @db.UnsignedBigInt
   contract_type           String?                 @db.VarChar(50)
   deleted_at              DateTime?               @db.Timestamp(0)

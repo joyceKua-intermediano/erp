@@ -13,8 +13,10 @@ import {
   type ContractTemplate,
   type ContractTemplateDetail,
   type SampleContractOption,
+  type TemplateFormat,
   type TemplateFormInput,
 } from "@/lib/templates";
+import { parseTemplateDocument } from "@/lib/templates/blocks";
 
 // Templates without a cluster are shared, so they stay visible to everyone with Configuration access.
 function visibleTemplates(scope: ClusterScope): Prisma.templatesWhereInput {
@@ -38,10 +40,7 @@ const templateSelect = {
 
 type TemplateRow = Prisma.templatesGetPayload<{ select: typeof templateSelect }>;
 
-function toTemplate(
-  row: TemplateRow,
-  content: { hasTypstSource: boolean; hasLegacyContent: boolean },
-): ContractTemplate {
+function toTemplate(row: TemplateRow, format: TemplateFormat): ContractTemplate {
   return {
     id: row.id.toString(),
     name: row.name,
@@ -49,7 +48,7 @@ function toTemplate(
     clusterName: row.intermediano_companies?.name ?? null,
     countryName: row.countries?.name ?? null,
     contractKind: toContractKind(row.contract_type),
-    ...content,
+    format,
     contractCount: row._count.contracts,
     updatedAt: row.updated_at?.toISOString() ?? null,
   };
@@ -59,13 +58,20 @@ function hasText(value: string | null) {
   return Boolean(value?.trim());
 }
 
+function toFormat(content: { blocks: boolean; code: boolean; legacy: boolean }): TemplateFormat {
+  if (content.blocks) return "blocks";
+  if (content.code) return "code";
+  return content.legacy ? "legacy" : "empty";
+}
+
 export async function getTemplates(): Promise<ContractTemplate[]> {
   const session = await requirePermission("settings.view");
 
   try {
     const where = visibleTemplates(session.user.clusters);
-    const [rows, withTypst, withLegacy] = await Promise.all([
+    const [rows, withBlocks, withCode, withLegacy] = await Promise.all([
       prisma.templates.findMany({ where, orderBy: { name: "asc" }, select: templateSelect }),
+      prisma.templates.findMany({ where: { ...where, content_blocks: { not: null } }, select: { id: true } }),
       prisma.templates.findMany({
         where: { ...where, typst_source: { not: null }, NOT: { typst_source: "" } },
         select: { id: true },
@@ -76,11 +82,12 @@ export async function getTemplates(): Promise<ContractTemplate[]> {
       }),
     ]);
 
-    // Only ids are read for the two flags, so the list never loads template bodies.
-    const typstIds = new Set(withTypst.map((row) => row.id));
+    // Only ids are read for the format, so the list never loads template bodies.
+    const blockIds = new Set(withBlocks.map((row) => row.id));
+    const codeIds = new Set(withCode.map((row) => row.id));
     const legacyIds = new Set(withLegacy.map((row) => row.id));
     return rows.map((row) =>
-      toTemplate(row, { hasTypstSource: typstIds.has(row.id), hasLegacyContent: legacyIds.has(row.id) }),
+      toTemplate(row, toFormat({ blocks: blockIds.has(row.id), code: codeIds.has(row.id), legacy: legacyIds.has(row.id) })),
     );
   } catch (error) {
     console.error("getTemplates failed", { error });
@@ -97,12 +104,17 @@ export async function getTemplate(templateId: string): Promise<ContractTemplateD
   try {
     const row = await prisma.templates.findFirst({
       where: { id: BigInt(parsedId.data), ...visibleTemplates(session.user.clusters) },
-      select: { ...templateSelect, typst_source: true, body_content: true },
+      select: { ...templateSelect, typst_source: true, content_blocks: true, body_content: true },
     });
     if (!row) return null;
 
+    const document = parseTemplateDocument(row.content_blocks);
     return {
-      ...toTemplate(row, { hasTypstSource: hasText(row.typst_source), hasLegacyContent: hasText(row.body_content) }),
+      ...toTemplate(
+        row,
+        toFormat({ blocks: document !== null, code: hasText(row.typst_source), legacy: hasText(row.body_content) }),
+      ),
+      document,
       typstSource: row.typst_source ?? "",
     };
   } catch (error) {
@@ -166,7 +178,8 @@ type TemplateWriteData = {
   intermediano_company_id: bigint | null;
   country_id: bigint | null;
   contract_type: string | null;
-  typst_source: string;
+  content_blocks: string | null;
+  typst_source: string | null;
 };
 
 async function validateTemplateInput(
@@ -203,7 +216,9 @@ async function validateTemplateInput(
       intermediano_company_id: clusterId,
       country_id: countryId,
       contract_type: values.contractKind || null,
-      typst_source: values.typstSource,
+      // A template is either blocks or code; saving one mode clears the other so rendering is unambiguous.
+      content_blocks: values.mode === "blocks" ? JSON.stringify(values.document) : null,
+      typst_source: values.mode === "code" ? values.typstSource : null,
     },
   };
 }

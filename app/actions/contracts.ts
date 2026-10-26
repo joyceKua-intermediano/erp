@@ -128,9 +128,15 @@ export async function getContract(clusterId: string, contractId: string): Promis
     if (!contract) return null;
 
     const [supplementary] = contract.supplementary_contract_details;
-    const typstTemplate = contract.template_id
+    const pdfTemplate = contract.template_id
       ? await prisma.templates.findFirst({
-          where: { id: contract.template_id, typst_source: { not: null }, NOT: { typst_source: "" } },
+          where: {
+            id: contract.template_id,
+            OR: [
+              { content_blocks: { not: null } },
+              { typst_source: { not: null }, NOT: { typst_source: "" } },
+            ],
+          },
           select: { id: true },
         })
       : null;
@@ -152,7 +158,7 @@ export async function getContract(clusterId: string, contractId: string): Promis
       translatedJobDescription: contract.translated_job_description,
       templateId: contract.template_id?.toString() ?? null,
       templateName: contract.templates?.name ?? null,
-      hasTypstTemplate: typstTemplate !== null,
+      hasPdfTemplate: pdfTemplate !== null,
       isSentToEmployee: contract.is_sent_to_employee ?? false,
       employeeSignedAt: isSigned(contract.signature) ? (contract.signed_contract?.toISOString() ?? null) : null,
       adminSignedAt: isSigned(contract.admin_signature) ? (contract.admin_signed_contract?.toISOString() ?? null) : null,

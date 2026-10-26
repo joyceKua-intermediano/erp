@@ -128,9 +128,9 @@ function ClusterContractDetail({
 }
 
 function PdfActions({ contract, clusterId }: { contract: ContractDetail; clusterId: string }) {
-  if (!contract.hasTypstTemplate) {
+  if (!contract.hasPdfTemplate) {
     return (
-      <Button variant="outline" disabled title="Choose a template with Typst source to generate the PDF.">
+      <Button variant="outline" disabled title="Choose a template built in Contract templates to generate the PDF.">
         <FileDownIcon />
         No PDF template
       </Button>
