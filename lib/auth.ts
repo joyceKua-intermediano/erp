@@ -4,6 +4,7 @@ import Google from "next-auth/providers/google"
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id"
 import { connection } from "next/server"
 import { getUserAccess } from "./access"
+import { isClusterModuleKey, type ClusterModuleKey } from "./cluster-modules"
 import { canAccessCluster, clusterIdSchema } from "./clusters"
 import { env, isGoogleEnabled } from "./env"
 import { hasPermission, type PermissionName } from "./permissions"
@@ -159,7 +160,20 @@ export async function requirePermission(permission: PermissionName): Promise<Ses
   return session
 }
 
-// Cluster data needs both checks: the module permission and access to that cluster.
+async function hasClusterModule(clusterId: bigint, module: ClusterModuleKey) {
+  try {
+    const row = await prisma.intermediano_company_modules.findUnique({
+      where: { intermediano_company_id_module_key: { intermediano_company_id: clusterId, module_key: module } },
+      select: { module_key: true },
+    })
+    return row !== null
+  } catch (error) {
+    console.error("hasClusterModule failed", { clusterId: clusterId.toString(), module, error })
+    throw new Error("Could not check this cluster's modules.")
+  }
+}
+
+// Cluster data needs three checks: the module permission, access to that cluster, and the module being enabled there.
 export async function requireClusterPermission(
   clusterId: string,
   permission: PermissionName
@@ -175,5 +189,26 @@ export async function requireClusterPermission(
     throw new Error("Forbidden")
   }
 
-  return { session, clusterId: BigInt(parsedClusterId.data) }
+  const companyId = BigInt(parsedClusterId.data)
+  const [resource] = permission.split(".")
+  if (isClusterModuleKey(resource) && !(await hasClusterModule(companyId, resource))) {
+    throw new Error("Forbidden")
+  }
+
+  return { session, clusterId: companyId }
+}
+
+// For modules that have no permission of their own, such as partner work inside Quotations.
+export async function requireClusterModule(
+  clusterId: string,
+  permission: PermissionName,
+  module: ClusterModuleKey
+): Promise<{ session: Session; clusterId: bigint }> {
+  const access = await requireClusterPermission(clusterId, permission)
+
+  if (!(await hasClusterModule(access.clusterId, module))) {
+    throw new Error("Forbidden")
+  }
+
+  return access
 }

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import {
+  BlocksIcon,
   FileSignatureIcon,
   GlobeIcon,
   PlusIcon,
@@ -28,6 +29,7 @@ import {
 } from "@/components/ui/table"
 import { useActiveCluster } from "@/hooks/use-clusters"
 import { useEmployees } from "@/hooks/use-employees"
+import { clusterModuleDetails, type ClusterModuleKey } from "@/lib/cluster-modules"
 import type { ClusterEmployee } from "@/lib/employees"
 import { ContractStatusBadge, formatContractDate } from "./contract-status-badge"
 import { EmployeeFormSheet } from "./employee-form-sheet"
@@ -54,6 +56,27 @@ export function ChooseClusterCard({
         <div className="flex flex-col gap-1">
           <h2 className="font-heading text-lg font-semibold">Choose a cluster to begin</h2>
           <p className="max-w-md text-sm text-muted-foreground">{description}</p>
+        </div>
+        <ClusterSwitcher />
+      </CardContent>
+    </Card>
+  )
+}
+
+export function ModuleDisabledCard({ module, clusterLabel }: { module: ClusterModuleKey; clusterLabel: string }) {
+  return (
+    <Card className="animate-in fade-in-0 duration-300 [--card-spacing:--spacing(10)]">
+      <CardContent className="flex flex-col items-center gap-4 text-center">
+        <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <BlocksIcon className="size-6" />
+        </span>
+        <div className="flex flex-col gap-1">
+          <h2 className="font-heading text-lg font-semibold">
+            {clusterModuleDetails[module].label} isn&apos;t enabled for {clusterLabel}
+          </h2>
+          <p className="max-w-md text-sm text-muted-foreground">
+            Switch to another cluster, or ask an administrator to turn it on in this company&apos;s module settings.
+          </p>
         </div>
         <ClusterSwitcher />
       </CardContent>
@@ -106,6 +129,9 @@ export function EmployeeSummary() {
   const activeCluster = useActiveCluster()
 
   if (!activeCluster) return <ChooseClusterCard />
+  if (!activeCluster.modules.includes("employees")) {
+    return <ModuleDisabledCard module="employees" clusterLabel={activeCluster.label} />
+  }
 
   return <ClusterEmployeeSummary key={activeCluster.id} clusterLabel={activeCluster.label} />
 }
@@ -124,6 +150,9 @@ export function EmployeeWorkspace({ canManage }: EmployeeWorkspaceProps) {
   const activeCluster = useActiveCluster()
 
   if (!activeCluster) return <ChooseClusterCard />
+  if (!activeCluster.modules.includes("employees")) {
+    return <ModuleDisabledCard module="employees" clusterLabel={activeCluster.label} />
+  }
 
   return <ClusterEmployeesPanel key={activeCluster.id} clusterLabel={activeCluster.label} canManage={canManage} />
 }

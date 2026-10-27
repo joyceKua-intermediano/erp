@@ -1,7 +1,7 @@
 "use server";
 
 import type { ActionResult } from "@/lib/action-result";
-import { requireClusterPermission } from "@/lib/auth";
+import { requireClusterModule, requireClusterPermission } from "@/lib/auth";
 import { normalizeSalary } from "@/lib/contracts";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -9,6 +9,7 @@ import {
   quotationFields,
   quotationFormSchema,
   quotationIdSchema,
+  quotationScopeSchema,
   toQuotationClusterKind,
   type ClusterQuotations,
   type PayrollCostKey,
@@ -17,6 +18,7 @@ import {
   type QuotationFormInput,
   type QuotationFormOptions,
   type QuotationListItem,
+  type QuotationScope,
 } from "@/lib/quotations";
 import { calculateQuotation } from "@/lib/quotations/calculators";
 
@@ -41,10 +43,11 @@ async function findQuotationCluster(companyId: bigint): Promise<QuotationCluster
 }
 
 // The quotations table also stores payroll runs (is_payroll = 1), which belong to the Payroll module.
-function clusterQuotationsWhere(companyId: bigint) {
+// Writes keep the default so partner quotations stay read-only until their calculators are ported.
+function clusterQuotationsWhere(companyId: bigint, isPartner = false) {
   return {
     intermediano_company_id: companyId,
-    is_partner: false,
+    is_partner: isPartner,
     is_payroll: false,
     deleted_at: null,
   } satisfies Prisma.quotationsWhereInput;
@@ -73,10 +76,12 @@ const quotationSelect = {
   legal_grafication: true,
   dependent: true,
   is_integral: true,
+  is_partner: true,
   created_at: true,
   companies: { select: { name: true } },
   countries: { select: { name: true } },
   provinces: { select: { name: true } },
+  partners: { select: { partner_name: true } },
   // Legacy treats payroll costs as a hasOne relation.
   payroll_costs: {
     where: { deleted_at: null },
@@ -105,7 +110,8 @@ function toAmount(value: Prisma.Decimal | null | undefined) {
 }
 
 function breakdownFor(row: QuotationRow, kind: QuotationClusterKind | null) {
-  if (!kind) return null;
+  // Partner rows are priced by their destination country, whose calculators aren't ported yet.
+  if (!kind || row.is_partner) return null;
   const [payrollCosts] = row.payroll_costs;
   return calculateQuotation(kind, {
     companyId: row.company_id.toString(),
@@ -150,22 +156,33 @@ function toListItem(row: QuotationRow, kind: QuotationClusterKind | null): Quota
     grossSalary: toAmount(row.gross_salary),
     totalInvoice: breakdown?.totalInvoice ?? null,
     exchangeRate: toAmount(row.exchange_rate),
+    isPartner: row.is_partner,
+    partnerName: row.partners?.partner_name ?? null,
   };
 }
 
-export async function getClusterQuotations(clusterId: string): Promise<ClusterQuotations> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "quotations.view");
+export async function getClusterQuotations(clusterId: string, scope: QuotationScope = "direct"): Promise<ClusterQuotations> {
+  const parsedScope = quotationScopeSchema.safeParse(scope);
+  if (!parsedScope.success) throw new Error("Unknown quotation list.");
+  const isPartner = parsedScope.data === "partner";
+
+  const { clusterId: companyId } = isPartner
+    ? await requireClusterModule(clusterId, "quotations.view", "partner")
+    : await requireClusterPermission(clusterId, "quotations.view");
 
   try {
     const cluster = await findQuotationCluster(companyId);
     if (!cluster) return { kind: null, quotations: [] };
 
     const quotations = await prisma.quotations.findMany({
-      where: clusterQuotationsWhere(companyId),
+      where: clusterQuotationsWhere(companyId, isPartner),
       orderBy: [{ title: "desc" }, { id: "desc" }],
       select: quotationSelect,
     });
-    return { kind: cluster.kind, quotations: quotations.map((row) => toListItem(row, cluster.kind)) };
+    return {
+      kind: isPartner ? null : cluster.kind,
+      quotations: quotations.map((row) => toListItem(row, cluster.kind)),
+    };
   } catch (error) {
     console.error("getClusterQuotations failed", { clusterId: companyId.toString(), error });
     throw new Error("Could not load quotations for this cluster.");
@@ -183,15 +200,17 @@ export async function getQuotation(clusterId: string, quotationId: string): Prom
     if (!cluster) return null;
 
     const row = await prisma.quotations.findFirst({
-      where: { id: BigInt(parsedId.data), ...clusterQuotationsWhere(companyId) },
+      // The detail page opens both direct and partner quotations.
+      where: { id: BigInt(parsedId.data), ...clusterQuotationsWhere(companyId), is_partner: undefined },
       select: quotationSelect,
     });
     if (!row) return null;
+    if (row.is_partner) await requireClusterModule(clusterId, "quotations.view", "partner");
 
     const [payrollCosts] = row.payroll_costs;
     return {
       ...toListItem(row, cluster.kind),
-      kind: cluster.kind,
+      kind: row.is_partner ? null : cluster.kind,
       companyId: row.company_id.toString(),
       provinceId: row.province_id?.toString() ?? null,
       isFixFee: row.is_fix_fee,

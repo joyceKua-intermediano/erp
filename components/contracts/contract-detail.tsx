@@ -11,7 +11,7 @@ import {
   PencilIcon,
   RefreshCwIcon,
 } from "lucide-react"
-import { ChooseClusterCard } from "@/components/employees/employee-workspace"
+import { ChooseClusterCard, ModuleDisabledCard } from "@/components/employees/employee-workspace"
 import { ContractStatusBadge, formatContractDate } from "@/components/employees/contract-status-badge"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -99,6 +99,9 @@ export function ContractDetailView({ contractId, canManage }: ContractDetailView
 
   if (!activeCluster) {
     return <ChooseClusterCard description="Contracts are scoped to one Intermediano legal entity at a time." />
+  }
+  if (!activeCluster.modules.includes("contracts")) {
+    return <ModuleDisabledCard module="contracts" clusterLabel={activeCluster.label} />
   }
 
   return (

@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { clusterModuleKeySchema, type ClusterModuleKey } from "./cluster-modules"
 
 export type CountryOption = {
   id: string
@@ -25,8 +26,11 @@ export type IntermedianoCompany = {
   activeContractCount: number
   staffTrackerCount: number
   roles: CompanyRoleAccess[]
+  modules: ClusterModuleKey[]
   createdAt: string | null
 }
+
+export const companyModulesSchema = z.array(clusterModuleKeySchema).max(50)
 
 const requiredText = (label: string) =>
   z.string().trim().min(1, `${label} is required.`).max(255, `${label} is too long.`)

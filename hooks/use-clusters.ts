@@ -8,8 +8,10 @@ import {
   getIntermedianoCompanies,
   getIntermedianoCompany,
   updateIntermedianoCompany,
+  updateIntermedianoCompanyModules,
 } from "@/app/actions/clusters"
 import { unwrapActionResult } from "@/lib/action-result"
+import type { ClusterModuleKey } from "@/lib/cluster-modules"
 import type { CompanyFormInput } from "@/lib/intermediano-companies"
 import { useUiStore } from "@/store/use-ui-store"
 import { roleQueryKeys } from "./access-query-keys"
@@ -90,6 +92,16 @@ export function useSaveIntermedianoCompany() {
       unwrapActionResult(
         companyId ? await updateIntermedianoCompany(companyId, input) : await createIntermedianoCompany(input)
       ),
+    onSuccess: () => invalidate(),
+  })
+}
+
+export function useSaveCompanyModules() {
+  const invalidate = useInvalidateCompanies()
+
+  return useMutation({
+    mutationFn: async ({ companyId, modules }: { companyId: string; modules: ClusterModuleKey[] }) =>
+      unwrapActionResult(await updateIntermedianoCompanyModules(companyId, modules)),
     onSuccess: () => invalidate(),
   })
 }

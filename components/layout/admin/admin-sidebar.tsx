@@ -3,23 +3,16 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
-  BriefcaseBusinessIcon,
   Building2Icon,
   BuildingIcon,
-  CalendarClockIcon,
-  CoinsIcon,
   FileCodeIcon,
   FileSignatureIcon,
   FileTextIcon,
   HandshakeIcon,
-  LandmarkIcon,
   LayoutDashboardIcon,
-  SettingsIcon,
   ShieldCheckIcon,
-  TargetIcon,
   UserSearchIcon,
   UsersIcon,
-  WalletIcon,
 } from "lucide-react"
 import {
   Sidebar,
@@ -34,53 +27,54 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { useActiveCluster } from "@/hooks/use-clusters"
+import type { ClusterModuleKey } from "@/lib/cluster-modules"
 import { isActivePath, type NavItem } from "@/lib/navigation"
+import type { PermissionName } from "@/lib/permissions"
 
-const overviewItems: NavItem[] = [
+type GatedNavItem = NavItem & { permission?: PermissionName }
+type ClusterNavItem = NavItem & { permission: PermissionName; module: ClusterModuleKey }
+
+const overviewItems: GatedNavItem[] = [
   { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboardIcon },
 ]
 
-const clusterItems: NavItem[] = [
-  { title: "Quotations", href: "/admin/quotations", icon: FileTextIcon },
-  { title: "Employees", href: "/admin/employees", icon: UsersIcon },
-  { title: "Contracts", href: "/admin/contracts", icon: FileSignatureIcon },
-  { title: "Timesheets", href: "/admin/timesheets", icon: CalendarClockIcon },
-  { title: "Expenses", href: "/admin/expenses", icon: WalletIcon },
-  { title: "Payroll", href: "/admin/payroll", icon: CoinsIcon },
+// Only modules with a page in the new app are listed; add Timesheets, Expenses and Payroll here once they're built.
+const clusterItems: ClusterNavItem[] = [
+  { title: "Quotations", href: "/admin/quotations", icon: FileTextIcon, permission: "quotations.view", module: "quotations" },
+  { title: "Employees", href: "/admin/employees", icon: UsersIcon, permission: "employees.view", module: "employees" },
+  { title: "Contracts", href: "/admin/contracts", icon: FileSignatureIcon, permission: "contracts.view", module: "contracts" },
 ]
 
-const sharedGroups: { label: string; items: NavItem[] }[] = [
+const sharedGroups: { label: string; items: GatedNavItem[] }[] = [
   {
     label: "Sales",
     items: [
-      { title: "Leads", href: "/admin/leads", icon: TargetIcon },
-      { title: "Companies", href: "/admin/companies", icon: Building2Icon },
-      { title: "Partners", href: "/admin/partners", icon: HandshakeIcon },
+      { title: "Companies", href: "/admin/companies", icon: Building2Icon, permission: "companies.view" },
+      { title: "Partners", href: "/admin/partners", icon: HandshakeIcon, permission: "partners.view" },
     ],
   },
   {
     label: "Recruitment",
-    items: [
-      { title: "Vacancies", href: "/admin/vacancies", icon: BriefcaseBusinessIcon },
-      { title: "Consultants", href: "/admin/consultants", icon: UserSearchIcon },
-    ],
-  },
-  {
-    label: "Investments",
-    items: [{ title: "Investments", href: "/admin/investments", icon: LandmarkIcon }],
+    items: [{ title: "Consultants", href: "/admin/consultants", icon: UserSearchIcon, permission: "consultants.view" }],
   },
   {
     label: "Settings",
     items: [
-      { title: "Intermediano companies", href: "/admin/intermediano-companies", icon: BuildingIcon },
-      { title: "Contract templates", href: "/admin/templates", icon: FileCodeIcon },
-      { title: "Users & roles", href: "/admin/users", icon: ShieldCheckIcon },
-      { title: "Configuration", href: "/admin/settings", icon: SettingsIcon },
+      {
+        title: "Intermediano companies",
+        href: "/admin/intermediano-companies",
+        icon: BuildingIcon,
+        permission: "intermediano_companies.view",
+      },
+      { title: "Contract templates", href: "/admin/templates", icon: FileCodeIcon, permission: "settings.view" },
+      { title: "Users & roles", href: "/admin/users", icon: ShieldCheckIcon, permission: "users.view" },
     ],
   },
 ]
 
 function NavGroup({ label, items, pathname }: { label: string; items: NavItem[]; pathname: string }) {
+  if (items.length === 0) return null
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{label}</SidebarGroupLabel>
@@ -104,10 +98,16 @@ function NavGroup({ label, items, pathname }: { label: string; items: NavItem[];
   )
 }
 
-export function AdminSidebar() {
+export function AdminSidebar({ permissions }: { permissions: readonly string[] }) {
   const pathname = usePathname()
   const activeCluster = useActiveCluster()
   const clusterLabel = activeCluster?.label ?? "Cluster workspace"
+
+  const isPermitted = (item: GatedNavItem) => !item.permission || permissions.includes(item.permission)
+  // With no cluster chosen, the base items stay visible so their pages can prompt for a cluster.
+  const visibleClusterItems = clusterItems.filter(
+    (item) => isPermitted(item) && (!activeCluster || activeCluster.modules.includes(item.module))
+  )
 
   return (
     <Sidebar variant="inset" collapsible="icon">
@@ -127,10 +127,10 @@ export function AdminSidebar() {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className="gap-2 px-1">
-        <NavGroup label="Overview" items={overviewItems} pathname={pathname} />
-        <NavGroup label={clusterLabel} items={clusterItems} pathname={pathname} />
+        <NavGroup label="Overview" items={overviewItems.filter(isPermitted)} pathname={pathname} />
+        <NavGroup label={clusterLabel} items={visibleClusterItems} pathname={pathname} />
         {sharedGroups.map((group) => (
-          <NavGroup key={group.label} label={group.label} items={group.items} pathname={pathname} />
+          <NavGroup key={group.label} label={group.label} items={group.items.filter(isPermitted)} pathname={pathname} />
         ))}
       </SidebarContent>
       <SidebarRail />

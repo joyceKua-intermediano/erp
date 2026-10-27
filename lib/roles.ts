@@ -9,7 +9,7 @@ export type RoleSummary = {
   userCount: number
   permissions: PermissionName[]
   allClusters: boolean
-  clusters: Cluster[]
+  clusters: Pick<Cluster, "id" | "label">[]
   isProtected: boolean
 }
 

@@ -2,6 +2,7 @@
 
 import type { ActionResult } from "@/lib/action-result";
 import { requireAdminSession, requirePermission } from "@/lib/auth";
+import { defaultClusterModules, toClusterModules } from "@/lib/cluster-modules";
 import {
   canAccessCluster,
   clusterIdFilter,
@@ -13,6 +14,7 @@ import {
 import type { Prisma } from "@/lib/generated/prisma/client";
 import {
   companyFormSchema,
+  companyModulesSchema,
   type CompanyFormInput,
   type CompanyRoleAccess,
   type CountryOption,
@@ -28,12 +30,13 @@ export async function getClusters(): Promise<Cluster[]> {
     const companies = await prisma.intermediano_companies.findMany({
       where: { deleted_at: null, id: clusterIdFilter(session.user.clusters) },
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      select: { id: true, name: true, modules: { select: { module_key: true } } },
     });
 
     return companies.map((company) => ({
       id: company.id.toString(),
       label: company.name,
+      modules: toClusterModules(company.modules),
     }));
   } catch (error) {
     console.error("getClusters failed", { error });
@@ -78,6 +81,7 @@ function companySelect() {
     address: true,
     created_at: true,
     countries: { select: { name: true } },
+    modules: { select: { module_key: true } },
     _count: {
       select: {
         employees: { where: { deleted_at: null } },
@@ -138,6 +142,7 @@ function toIntermedianoCompany(company: CompanyRow, roles: CompanyRoleAccess[]):
     activeContractCount: company._count.contracts,
     staffTrackerCount: company._count.staff_trackers,
     roles,
+    modules: toClusterModules(company.modules),
     createdAt: company.created_at?.toISOString() ?? null,
   };
 }
@@ -254,7 +259,14 @@ export async function createIntermedianoCompany(input: CompanyFormInput): Promis
 
     const now = new Date();
     const company = await prisma.intermediano_companies.create({
-      data: { ...validated.data, created_at: now, updated_at: now },
+      data: {
+        ...validated.data,
+        created_at: now,
+        updated_at: now,
+        modules: {
+          create: defaultClusterModules.map((module) => ({ module_key: module, created_at: now, updated_at: now })),
+        },
+      },
       select: { id: true },
     });
     return { ok: true, data: { id: company.id.toString() } };
@@ -315,5 +327,55 @@ export async function archiveIntermedianoCompany(companyId: string): Promise<Act
   } catch (error) {
     console.error("archiveIntermedianoCompany failed", { companyId: parsedId.data, error });
     return { ok: false, error: "Could not archive this company. Try again." };
+  }
+}
+
+export async function updateIntermedianoCompanyModules(
+  companyId: string,
+  modules: string[],
+): Promise<ActionResult<{ id: string }>> {
+  const scope = await requireManageScope();
+  if (!scope) return { ok: false, error: "You don't have permission to change company modules." };
+
+  const parsedId = clusterIdSchema.safeParse(companyId);
+  if (!parsedId.success || !canAccessCluster(scope, parsedId.data)) {
+    return { ok: false, error: "Unknown company." };
+  }
+
+  const parsedModules = companyModulesSchema.safeParse(modules);
+  if (!parsedModules.success) return { ok: false, error: "Choose modules from the list." };
+
+  try {
+    const id = BigInt(parsedId.data);
+    const nextModules = [...new Set(parsedModules.data)];
+    const now = new Date();
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const company = await tx.intermediano_companies.findFirst({
+        where: { id, deleted_at: null },
+        select: { id: true },
+      });
+      if (!company) return false;
+
+      await tx.intermediano_company_modules.deleteMany({
+        where: { intermediano_company_id: id, module_key: { notIn: nextModules } },
+      });
+      await tx.intermediano_company_modules.createMany({
+        data: nextModules.map((module) => ({
+          intermediano_company_id: id,
+          module_key: module,
+          created_at: now,
+          updated_at: now,
+        })),
+        skipDuplicates: true,
+      });
+      return true;
+    });
+    if (!updated) return { ok: false, error: "This company no longer exists." };
+
+    return { ok: true, data: { id: parsedId.data } };
+  } catch (error) {
+    console.error("updateIntermedianoCompanyModules failed", { companyId: parsedId.data, error });
+    return { ok: false, error: "Could not save this company's modules. Try again." };
   }
 }
