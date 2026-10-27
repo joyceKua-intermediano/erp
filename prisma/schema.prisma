@@ -150,7 +150,6 @@ model contracts {
   contract_version               String?                          @db.VarChar(50)
   job_description                String?                          @db.Text
   translated_job_description     String?                          @db.Text
-  cluster_name                   String?                          @db.VarChar(255)
   is_sent_to_employee            Boolean?                         @default(false)
   signature                      String?                          @default("Pending Signature") @db.VarChar(255)
   signed_contract                DateTime?                        @db.DateTime(0)
@@ -406,6 +405,8 @@ model intermediano_companies {
   updated_at     DateTime?        @db.Timestamp(0)
   contracts      contracts[]
   employees      employees[]
+  invoices       invoices[]
+  quotations     quotations[]
   countries      countries        @relation(fields: [country_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "intermediano_companies_country_id_foreign")
   staff_trackers staff_trackers[]
   role_clusters  role_clusters[]
@@ -453,20 +454,22 @@ model invoice_details {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model invoices {
-  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  employee_id   BigInt    @db.UnsignedBigInt
-  company_id    BigInt    @db.UnsignedBigInt
-  invoice_date  DateTime  @db.Date
-  invoice_items String    @db.LongText
-  cluster_name  String    @db.VarChar(255)
-  deleted_at    DateTime? @db.Timestamp(0)
-  created_at    DateTime? @db.Timestamp(0)
-  updated_at    DateTime? @db.Timestamp(0)
-  companies     companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "invoices_company_id_foreign")
-  employees     employees @relation(fields: [employee_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "invoices_employee_id_foreign")
+  id                      BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
+  employee_id             BigInt                 @db.UnsignedBigInt
+  company_id              BigInt                 @db.UnsignedBigInt
+  invoice_date            DateTime               @db.Date
+  invoice_items           String                 @db.LongText
+  intermediano_company_id BigInt                 @db.UnsignedBigInt
+  deleted_at              DateTime?              @db.Timestamp(0)
+  created_at              DateTime?              @db.Timestamp(0)
+  updated_at              DateTime?              @db.Timestamp(0)
+  companies               companies              @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "invoices_company_id_foreign")
+  employees               employees              @relation(fields: [employee_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "invoices_employee_id_foreign")
+  intermediano_companies  intermediano_companies @relation(fields: [intermediano_company_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "invoices_intermediano_company_id_foreign")
 
   @@index([company_id], map: "invoices_company_id_foreign")
   @@index([employee_id], map: "invoices_employee_id_foreign")
+  @@index([intermediano_company_id], map: "invoices_intermediano_company_id_foreign")
 }
 
 model job_batches {
@@ -592,6 +595,7 @@ model partners {
   updated_at     DateTime?        @db.Timestamp(0)
   contracts      contracts[]
   customers      customers[]
+  quotations     quotations[]
   staff_trackers staff_trackers[]
 }
 
@@ -708,48 +712,54 @@ model provision_types {
 }
 
 model quotations {
-  id                  BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
-  title               String               @db.VarChar(255)
-  company_id          BigInt               @db.UnsignedBigInt
-  country_id          BigInt               @db.UnsignedBigInt
-  province_id         BigInt?              @db.UnsignedBigInt
-  consultant_id       BigInt?              @db.UnsignedBigInt
-  currency_name       String               @db.VarChar(255)
-  exchange_rate       Decimal              @db.Decimal(10, 6)
-  exchange_acronym    String               @db.VarChar(255)
-  gross_salary        Decimal              @db.Decimal(15, 2)
-  is_fix_fee          Boolean              @default(false)
-  fee                 Decimal              @db.Decimal(15, 4)
-  bank_fee            Decimal              @db.Decimal(15, 4)
-  bonus               Decimal              @default(0.00) @db.Decimal(15, 2)
-  home_allowance      Decimal              @default(0.00) @db.Decimal(15, 2)
-  transport_allowance Decimal              @default(0.00) @db.Decimal(15, 2)
-  medical_allowance   Decimal              @default(0.00) @db.Decimal(15, 2)
-  internet_allowance  Decimal              @default(0.00) @db.Decimal(15, 2)
-  family_allowance    Decimal?             @default(0.00) @db.Decimal(15, 2)
-  food_allowance      Decimal?             @default(0.00) @db.Decimal(15, 2)
-  legal_grafication   Decimal              @default(0.00) @db.Decimal(15, 2)
-  uvt_amount          Decimal              @default(0.00) @db.Decimal(15, 2)
-  capped_amount       Decimal              @default(0.00) @db.Decimal(15, 2)
-  dependent           Boolean              @default(false)
-  is_freelance        Boolean?             @default(false)
-  is_payroll          Boolean              @default(false)
-  is_integral         Boolean              @default(false)
-  cluster_name        String               @db.VarChar(255)
-  deleted_at          DateTime?            @db.Timestamp(0)
-  created_at          DateTime?            @db.Timestamp(0)
-  updated_at          DateTime?            @db.Timestamp(0)
-  contracts           contracts[]
-  payment_provisions  payment_provisions[]
-  payroll_costs       payroll_costs[]
-  companies           companies            @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "quotations_company_id_foreign")
-  consultants         consultants?         @relation(fields: [consultant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "quotations_consultant_id_foreign")
-  countries           countries            @relation(fields: [country_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "quotations_country_id_foreign")
-  provinces           provinces?           @relation(fields: [province_id], references: [id], onUpdate: NoAction, map: "quotations_province_id_foreign")
+  id                      BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  title                   String                  @db.VarChar(255)
+  company_id              BigInt                  @db.UnsignedBigInt
+  country_id              BigInt                  @db.UnsignedBigInt
+  province_id             BigInt?                 @db.UnsignedBigInt
+  consultant_id           BigInt?                 @db.UnsignedBigInt
+  partner_id              BigInt?                 @db.UnsignedBigInt
+  intermediano_company_id BigInt                  @db.UnsignedBigInt
+  currency_name           String                  @db.VarChar(255)
+  exchange_rate           Decimal                 @db.Decimal(10, 6)
+  exchange_acronym        String                  @db.VarChar(255)
+  gross_salary            Decimal                 @db.Decimal(15, 2)
+  is_fix_fee              Boolean                 @default(false)
+  fee                     Decimal                 @db.Decimal(15, 4)
+  bank_fee                Decimal                 @db.Decimal(15, 4)
+  bonus                   Decimal                 @default(0.00) @db.Decimal(15, 2)
+  home_allowance          Decimal                 @default(0.00) @db.Decimal(15, 2)
+  transport_allowance     Decimal                 @default(0.00) @db.Decimal(15, 2)
+  medical_allowance       Decimal                 @default(0.00) @db.Decimal(15, 2)
+  internet_allowance      Decimal                 @default(0.00) @db.Decimal(15, 2)
+  family_allowance        Decimal?                @default(0.00) @db.Decimal(15, 2)
+  food_allowance          Decimal?                @default(0.00) @db.Decimal(15, 2)
+  legal_grafication       Decimal                 @default(0.00) @db.Decimal(15, 2)
+  uvt_amount              Decimal                 @default(0.00) @db.Decimal(15, 2)
+  capped_amount           Decimal                 @default(0.00) @db.Decimal(15, 2)
+  dependent               Boolean                 @default(false)
+  is_freelance            Boolean?                @default(false)
+  is_payroll              Boolean                 @default(false)
+  is_integral             Boolean                 @default(false)
+  is_partner              Boolean                 @default(false)
+  deleted_at              DateTime?               @db.Timestamp(0)
+  created_at              DateTime?               @db.Timestamp(0)
+  updated_at              DateTime?               @db.Timestamp(0)
+  contracts               contracts[]
+  payment_provisions      payment_provisions[]
+  payroll_costs           payroll_costs[]
+  companies               companies               @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "quotations_company_id_foreign")
+  consultants             consultants?            @relation(fields: [consultant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "quotations_consultant_id_foreign")
+  countries               countries               @relation(fields: [country_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "quotations_country_id_foreign")
+  intermediano_companies  intermediano_companies  @relation(fields: [intermediano_company_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "quotations_intermediano_company_id_foreign")
+  partners                partners?               @relation(fields: [partner_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "quotations_partner_id_foreign")
+  provinces               provinces?              @relation(fields: [province_id], references: [id], onUpdate: NoAction, map: "quotations_province_id_foreign")
 
   @@index([company_id], map: "quotations_company_id_foreign")
   @@index([consultant_id], map: "quotations_consultant_id_foreign")
   @@index([country_id], map: "quotations_country_id_foreign")
+  @@index([intermediano_company_id], map: "quotations_intermediano_company_id_foreign")
+  @@index([partner_id], map: "quotations_partner_id_foreign")
   @@index([province_id], map: "quotations_province_id_foreign")
 }
 
