@@ -13,12 +13,16 @@ export type QuotationFigures = {
   transportAllowance: number
   medicalAllowance: number
   internetAllowance: number
+  familyAllowance: number
+  foodAllowance: number
   legalGratification: number
   payrollCosts: {
     medicalInsurance: number
     meal: number
     transportation: number
     operationalCosts: number
+    ufMonth: number
+    eps: number
   }
 }
 

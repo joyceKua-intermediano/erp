@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type FormEvent, type ReactNode } from "react"
+import { Fragment, useState, type FormEvent, type ReactNode } from "react"
 import { Loader2Icon } from "lucide-react"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
@@ -281,18 +281,21 @@ function QuotationForm({ quotation, onDone }: { quotation: QuotationDetail | nul
             {textField("bonus", "Bonus")}
             {textField("homeAllowance", "Home allowance")}
             {textField("medicalAllowance", "Medical allowance")}
-            {fields?.transportAllowance && textField("transportAllowance", "Transport allowance")}
+            {fields?.transportAllowance &&
+              textField("transportAllowance", fields.transportAllowanceLabel ?? "Transport allowance")}
+            {fields?.foodAllowance && textField("foodAllowance", "Food allowance")}
+            {fields?.familyAllowance && textField("familyAllowance", "Family allowance")}
             {textField("internetAllowance", "Internet allowance")}
             {fields?.legalGratification && textField("legalGratification", "Legal gratification")}
           </FieldGroup>
         </FormSection>
 
-        {fields?.payrollCosts && (
+        {fields && fields.payrollCosts.length > 0 && (
           <FormSection title="Payroll costs">
             <FieldGroup className="grid gap-4 sm:grid-cols-2">
-              {textField("medicalInsurance", "Medical plan & life insurance")}
-              {textField("meal", "Meal tickets")}
-              {textField("transportation", "Transportation tickets")}
+              {fields.payrollCosts.map((cost) => (
+                <Fragment key={cost.key}>{textField(cost.key, cost.label)}</Fragment>
+              ))}
             </FieldGroup>
           </FormSection>
         )}

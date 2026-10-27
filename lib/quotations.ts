@@ -3,12 +3,23 @@ import { normalizeSalary } from "./contracts"
 import type { QuotationBreakdown } from "./quotations/calculators/types"
 
 // Each legacy cluster has its own Filament form and calculator; these are the ones ported so far.
-export const quotationClusterKinds = ["colombia", "canada", "brasil"] as const
+export const quotationClusterKinds = [
+  "colombia",
+  "canada",
+  "brasil",
+  "chile",
+  "ecuador",
+  "mexico",
+  "peru",
+  "uruguay",
+  "costa-rica",
+  "hongkong",
+] as const
 
 export type QuotationClusterKind = (typeof quotationClusterKinds)[number]
 
 export function toQuotationClusterKind(countryName: string | null): QuotationClusterKind | null {
-  switch (countryName?.trim().toLowerCase()) {
+  switch (countryName?.toLowerCase().replace(/\s+/g, "")) {
     case "colombia":
       return "colombia"
     case "canada":
@@ -16,23 +27,80 @@ export function toQuotationClusterKind(countryName: string | null): QuotationClu
     case "brazil":
     case "brasil":
       return "brasil"
+    case "chile":
+      return "chile"
+    case "ecuador":
+      return "ecuador"
+    case "mexico":
+    case "méxico":
+      return "mexico"
+    case "peru":
+    case "perú":
+      return "peru"
+    case "uruguay":
+      return "uruguay"
+    case "costarica":
+      return "costa-rica"
+    case "hongkong":
+      return "hongkong"
     default:
       return null
   }
+}
+
+export type PayrollCostKey = "medicalInsurance" | "meal" | "transportation" | "ufMonth" | "eps"
+
+export type PayrollCostField = {
+  key: PayrollCostKey
+  label: string
+  isPercent?: boolean
 }
 
 export type QuotationFieldConfig = {
   quotationType: boolean
   province: boolean
   transportAllowance: boolean
+  transportAllowanceLabel?: string
+  familyAllowance: boolean
+  foodAllowance: boolean
   legalGratification: boolean
-  payrollCosts: boolean
+  payrollCosts: readonly PayrollCostField[]
 }
 
+const baseFields: QuotationFieldConfig = {
+  quotationType: false,
+  province: false,
+  transportAllowance: false,
+  familyAllowance: false,
+  foodAllowance: false,
+  legalGratification: false,
+  payrollCosts: [],
+}
+
+// Mirrors each legacy cluster's Filament quotation form.
 export const quotationFields: Record<QuotationClusterKind, QuotationFieldConfig> = {
-  colombia: { quotationType: true, province: false, transportAllowance: true, legalGratification: false, payrollCosts: false },
-  canada: { quotationType: false, province: true, transportAllowance: false, legalGratification: true, payrollCosts: false },
-  brasil: { quotationType: false, province: false, transportAllowance: true, legalGratification: false, payrollCosts: true },
+  colombia: { ...baseFields, quotationType: true, transportAllowance: true },
+  canada: { ...baseFields, province: true, legalGratification: true },
+  brasil: {
+    ...baseFields,
+    transportAllowance: true,
+    payrollCosts: [
+      { key: "medicalInsurance", label: "Medical plan & life insurance" },
+      { key: "meal", label: "Meal tickets" },
+      { key: "transportation", label: "Transportation tickets" },
+    ],
+  },
+  chile: { ...baseFields, legalGratification: true, payrollCosts: [{ key: "ufMonth", label: "UF of the month" }] },
+  ecuador: { ...baseFields, transportAllowance: true },
+  mexico: { ...baseFields, transportAllowance: true, transportAllowanceLabel: "Car allowance", foodAllowance: true },
+  peru: { ...baseFields, familyAllowance: true, legalGratification: true, payrollCosts: [{ key: "eps", label: "EPS" }] },
+  uruguay: { ...baseFields, legalGratification: true },
+  "costa-rica": {
+    ...baseFields,
+    transportAllowance: true,
+    payrollCosts: [{ key: "medicalInsurance", label: "Medical insurance (%)", isPercent: true }],
+  },
+  hongkong: { ...baseFields, transportAllowance: true },
 }
 
 export const QUEBEC = "Quebec"
@@ -73,12 +141,16 @@ export type QuotationDetail = QuotationListItem & {
   transportAllowance: string
   medicalAllowance: string
   internetAllowance: string
+  familyAllowance: string
+  foodAllowance: string
   legalGratification: string
   dependent: boolean
   isIntegral: boolean
   medicalInsurance: string
   meal: string
   transportation: string
+  ufMonth: string
+  eps: string
   clusterLabel: string
   createdAt: string | null
   breakdown: QuotationBreakdown | null
@@ -133,11 +205,15 @@ export const quotationFormSchema = z.object({
   transportAllowance: amount("the transport allowance"),
   medicalAllowance: amount("the medical allowance"),
   internetAllowance: amount("the internet allowance"),
+  familyAllowance: amount("the family allowance"),
+  foodAllowance: amount("the food allowance"),
   legalGratification: amount("the legal gratification"),
   dependent: z.boolean(),
-  medicalInsurance: amount("the medical plan"),
+  medicalInsurance: amount("the medical insurance"),
   meal: amount("the meal tickets"),
   transportation: amount("the transportation tickets"),
+  ufMonth: amount("the UF of the month"),
+  eps: amount("the EPS"),
 })
 
 export type QuotationFormInput = z.input<typeof quotationFormSchema>
@@ -180,10 +256,14 @@ export function toQuotationFormInput(quotation: QuotationDetail | null): Quotati
     transportAllowance: quotation?.transportAllowance ?? "0",
     medicalAllowance: quotation?.medicalAllowance ?? "0",
     internetAllowance: quotation?.internetAllowance ?? "0",
+    familyAllowance: quotation?.familyAllowance ?? "0",
+    foodAllowance: quotation?.foodAllowance ?? "0",
     legalGratification: quotation?.legalGratification ?? "0",
     dependent: quotation?.dependent ?? false,
     medicalInsurance: quotation?.medicalInsurance ?? "0",
     meal: quotation?.meal ?? "0",
     transportation: quotation?.transportation ?? "0",
+    ufMonth: quotation?.ufMonth ?? "0",
+    eps: quotation?.eps ?? "0",
   }
 }
