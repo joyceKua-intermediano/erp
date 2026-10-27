@@ -14,7 +14,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useActiveCluster } from "@/hooks/use-clusters"
 import { useQuotation } from "@/hooks/use-quotations"
 import type { BreakdownSection } from "@/lib/quotations/calculators/types"
-import { feeTypeLabels, formatAmount, formatQuotationTitle, type QuotationDetail } from "@/lib/quotations"
+import {
+  feeTypeLabels,
+  formatAmount,
+  formatQuotationTitle,
+  quotationFields,
+  type QuotationDetail,
+} from "@/lib/quotations"
 import { ArchiveQuotationDialog } from "./archive-quotation-dialog"
 import { QuotationFormSheet } from "./quotation-form-sheet"
 
@@ -139,6 +145,8 @@ function QuotationDetailContent({ quotation, canManage }: { quotation: Quotation
   const canEdit = canManage && quotation.kind !== null
   const rate = Number(quotation.exchangeRate)
   const amount = (value: string) => `${quotation.currencyName} ${formatAmount(Number(value))}`
+  const fields = quotation.kind ? quotationFields[quotation.kind] : null
+  const optional = (shown: boolean, row: [string, string]): [string, string][] => (shown ? [row] : [])
 
   const inputs: [string, string][] = [
     ["Gross salary", amount(quotation.grossSalary)],
@@ -149,17 +157,19 @@ function QuotationDetailContent({ quotation, canManage }: { quotation: Quotation
     ["Dependent", quotation.dependent ? "Yes" : "No"],
     ["Bonus", amount(quotation.bonus)],
     ["Home allowance", amount(quotation.homeAllowance)],
-    ["Transport allowance", amount(quotation.transportAllowance)],
+    ...optional(fields?.transportAllowance ?? true, [
+      fields?.transportAllowanceLabel ?? "Transport allowance",
+      amount(quotation.transportAllowance),
+    ]),
+    ...optional(fields?.foodAllowance ?? false, ["Food allowance", amount(quotation.foodAllowance)]),
+    ...optional(fields?.familyAllowance ?? false, ["Family allowance", amount(quotation.familyAllowance)]),
     ["Medical allowance", amount(quotation.medicalAllowance)],
     ["Internet allowance", amount(quotation.internetAllowance)],
-    ["Legal gratification", amount(quotation.legalGratification)],
-    ...(quotation.kind === "brasil"
-      ? ([
-          ["Medical plan & life insurance", amount(quotation.medicalInsurance)],
-          ["Meal tickets", amount(quotation.meal)],
-          ["Transportation tickets", amount(quotation.transportation)],
-        ] as [string, string][])
-      : []),
+    ...optional(fields?.legalGratification ?? true, ["Legal gratification", amount(quotation.legalGratification)]),
+    ...(fields?.payrollCosts ?? []).map((cost): [string, string] => [
+      cost.label,
+      cost.isPercent ? `${quotation[cost.key]}%` : amount(quotation[cost.key]),
+    ]),
   ]
 
   return (

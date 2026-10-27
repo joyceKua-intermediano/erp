@@ -11,6 +11,7 @@ import {
   quotationIdSchema,
   toQuotationClusterKind,
   type ClusterQuotations,
+  type PayrollCostKey,
   type QuotationClusterKind,
   type QuotationDetail,
   type QuotationFormInput,
@@ -67,6 +68,8 @@ const quotationSelect = {
   transport_allowance: true,
   medical_allowance: true,
   internet_allowance: true,
+  family_allowance: true,
+  food_allowance: true,
   legal_grafication: true,
   dependent: true,
   is_integral: true,
@@ -79,7 +82,15 @@ const quotationSelect = {
     where: { deleted_at: null },
     orderBy: { id: "asc" },
     take: 1,
-    select: { id: true, medical_insurance: true, meal: true, transportation: true, operational_costs: true },
+    select: {
+      id: true,
+      medical_insurance: true,
+      meal: true,
+      transportation: true,
+      operational_costs: true,
+      uf_month: true,
+      eps: true,
+    },
   },
 } satisfies Prisma.quotationsSelect;
 
@@ -111,12 +122,16 @@ function breakdownFor(row: QuotationRow, kind: QuotationClusterKind | null) {
     transportAllowance: toNumber(row.transport_allowance),
     medicalAllowance: toNumber(row.medical_allowance),
     internetAllowance: toNumber(row.internet_allowance),
+    familyAllowance: toNumber(row.family_allowance),
+    foodAllowance: toNumber(row.food_allowance),
     legalGratification: toNumber(row.legal_grafication),
     payrollCosts: {
       medicalInsurance: toNumber(payrollCosts?.medical_insurance),
       meal: toNumber(payrollCosts?.meal),
       transportation: toNumber(payrollCosts?.transportation),
       operationalCosts: toNumber(payrollCosts?.operational_costs),
+      ufMonth: toNumber(payrollCosts?.uf_month),
+      eps: toNumber(payrollCosts?.eps),
     },
   });
 }
@@ -187,12 +202,16 @@ export async function getQuotation(clusterId: string, quotationId: string): Prom
       transportAllowance: toAmount(row.transport_allowance),
       medicalAllowance: toAmount(row.medical_allowance),
       internetAllowance: toAmount(row.internet_allowance),
+      familyAllowance: toAmount(row.family_allowance),
+      foodAllowance: toAmount(row.food_allowance),
       legalGratification: toAmount(row.legal_grafication),
       dependent: row.dependent,
       isIntegral: row.is_integral,
       medicalInsurance: toAmount(payrollCosts?.medical_insurance),
       meal: toAmount(payrollCosts?.meal),
       transportation: toAmount(payrollCosts?.transportation),
+      ufMonth: toAmount(payrollCosts?.uf_month),
+      eps: toAmount(payrollCosts?.eps),
       clusterLabel: cluster.label,
       createdAt: row.created_at?.toISOString() ?? null,
       breakdown: breakdownFor(row, cluster.kind),
@@ -248,11 +267,15 @@ type ExistingQuotation = {
   dependent: boolean;
 };
 
-type PayrollCostsWriteData = {
-  medical_insurance: string;
-  meal: string;
-  transportation: string;
-};
+const payrollCostColumns = {
+  medicalInsurance: "medical_insurance",
+  meal: "meal",
+  transportation: "transportation",
+  ufMonth: "uf_month",
+  eps: "eps",
+} as const satisfies Record<PayrollCostKey, keyof Prisma.payroll_costsUncheckedCreateInput>;
+
+type PayrollCostsWriteData = Partial<Record<(typeof payrollCostColumns)[PayrollCostKey], string>>;
 
 type QuotationWriteData = {
   quotation: Omit<Prisma.quotationsUncheckedCreateInput, "country_id" | "intermediano_company_id">;
@@ -334,18 +357,20 @@ async function validateQuotationInput(
         internet_allowance: normalizeSalary(values.internetAllowance),
         dependent: values.dependent,
         ...(fields.transportAllowance && { transport_allowance: normalizeSalary(values.transportAllowance) }),
+        ...(fields.familyAllowance && { family_allowance: normalizeSalary(values.familyAllowance) }),
+        ...(fields.foodAllowance && { food_allowance: normalizeSalary(values.foodAllowance) }),
         ...(fields.legalGratification && { legal_grafication: normalizeSalary(values.legalGratification) }),
         ...(fields.quotationType && { is_integral: values.isIntegral }),
         ...(fields.province && { province_id: provinceId }),
         ...(await annualSetupAmounts(cluster.kind, cluster.countryId, values.dependent, existing)),
       },
-      payrollCosts: fields.payrollCosts
-        ? {
-            medical_insurance: normalizeSalary(values.medicalInsurance),
-            meal: normalizeSalary(values.meal),
-            transportation: normalizeSalary(values.transportation),
-          }
-        : null,
+      // Only this cluster's payroll cost columns are written, so other columns keep their saved values.
+      payrollCosts:
+        fields.payrollCosts.length > 0
+          ? Object.fromEntries(
+              fields.payrollCosts.map(({ key }) => [payrollCostColumns[key], normalizeSalary(values[key])]),
+            )
+          : null,
     },
   };
 }
