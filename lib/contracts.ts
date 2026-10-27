@@ -76,7 +76,7 @@ export type ContractDetail = ClusterContract & {
   translatedJobDescription: string | null
   templateId: string | null
   templateName: string | null
-  hasTypstTemplate: boolean
+  hasPdfTemplate: boolean
   isSentToEmployee: boolean
   employeeSignedAt: string | null
   adminSignedAt: string | null

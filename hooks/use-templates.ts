@@ -9,7 +9,7 @@ import {
 } from "@/app/actions/templates"
 import { unwrapActionResult } from "@/lib/action-result"
 import type { TypstDiagnostic } from "@/lib/typst/diagnostics"
-import type { TemplateFormInput } from "@/lib/templates"
+import type { TemplateFormInput, TemplatePreviewContent } from "@/lib/templates"
 
 export const templateQueryKeys = {
   all: ["templates"] as const,
@@ -71,11 +71,11 @@ export type TemplatePreview =
   | { status: "ready"; url: string }
   | { status: "error"; message: string; diagnostics: TypstDiagnostic[] }
 
-async function fetchPreview(source: string, contractId: string, clusterId: string): Promise<TemplatePreview> {
+async function fetchPreview(body: string): Promise<TemplatePreview> {
   const response = await fetch("/api/templates/preview", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ source, contractId, clusterId }),
+    body,
   })
 
   if (response.ok) {
@@ -95,11 +95,17 @@ async function fetchPreview(source: string, contractId: string, clusterId: strin
   }
 }
 
-export function useTemplatePreview(source: string, sample: { contractId: string; clusterId: string } | null) {
+// The request body doubles as the cache key, so identical content never renders twice.
+export function useTemplatePreview(
+  content: TemplatePreviewContent | null,
+  sample: { contractId: string; clusterId: string } | null
+) {
+  const body = content && sample ? JSON.stringify({ ...content, ...sample }) : null
+
   return useQuery({
-    queryKey: ["templates", "preview", sample?.contractId ?? null, source] as const,
-    queryFn: () => (sample ? fetchPreview(source, sample.contractId, sample.clusterId) : null),
-    enabled: sample !== null && source.trim().length > 0,
+    queryKey: ["templates", "preview", body] as const,
+    queryFn: () => (body ? fetchPreview(body) : null),
+    enabled: body !== null,
     placeholderData: (previous) => previous,
     staleTime: Infinity,
     // Each result owns an object URL that the editor revokes once replaced, so stale entries can't be reused.
