@@ -1,13 +1,15 @@
 import { z } from "zod"
+import type { ClusterModuleKey } from "./cluster-modules"
 
 export type ClusterId = string
 
 export type Cluster = {
   id: ClusterId
   label: string
+  modules: ClusterModuleKey[]
 }
 
-export type ClusterOption = Cluster & {
+export type ClusterOption = Omit<Cluster, "modules"> & {
   country: string
 }
 

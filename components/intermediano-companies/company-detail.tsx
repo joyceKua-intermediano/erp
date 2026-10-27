@@ -29,6 +29,7 @@ import type { IntermedianoCompany } from "@/lib/intermediano-companies"
 import { ArchiveCompanyDialog } from "./archive-company-dialog"
 import { CompanyFormSheet } from "./company-form-sheet"
 import { CompanyMark } from "./company-mark"
+import { CompanyModulesCard } from "./company-modules-card"
 
 const dateFormatter = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" })
 
@@ -215,6 +216,12 @@ function CompanyDetailContent({ company, canManage }: { company: IntermedianoCom
         </div>
 
         <div className="flex flex-col gap-6 xl:sticky xl:top-28">
+          <CompanyModulesCard
+            key={company.modules.join(",")}
+            companyId={company.id}
+            modules={company.modules}
+            canManage={canManage}
+          />
           <Card className="[--card-spacing:--spacing(5)]">
             <CardHeader>
               <CardTitle>Roles with access</CardTitle>

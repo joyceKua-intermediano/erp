@@ -9,22 +9,24 @@ import {
 } from "@/app/actions/quotations"
 import { unwrapActionResult } from "@/lib/action-result"
 import type { ClusterId } from "@/lib/clusters"
-import type { QuotationFormInput } from "@/lib/quotations"
+import type { QuotationFormInput, QuotationScope } from "@/lib/quotations"
 import { useUiStore } from "@/store/use-ui-store"
 import { contractQueryKeys } from "./use-contracts"
 
 export const quotationQueryKeys = {
   cluster: (clusterId: ClusterId | null) => ["cluster", clusterId, "quotations"] as const,
+  list: (clusterId: ClusterId | null, scope: QuotationScope) =>
+    ["cluster", clusterId, "quotations", "list", scope] as const,
   detail: (clusterId: ClusterId | null, quotationId: string) => ["cluster", clusterId, "quotations", quotationId] as const,
   formOptions: (clusterId: ClusterId | null) => ["cluster", clusterId, "quotation-form-options"] as const,
 }
 
-export function useQuotations() {
+export function useQuotations(scope: QuotationScope = "direct") {
   const activeCluster = useUiStore((state) => state.activeCluster)
 
   return useQuery({
-    queryKey: quotationQueryKeys.cluster(activeCluster),
-    queryFn: activeCluster ? () => getClusterQuotations(activeCluster) : skipToken,
+    queryKey: quotationQueryKeys.list(activeCluster, scope),
+    queryFn: activeCluster ? () => getClusterQuotations(activeCluster, scope) : skipToken,
   })
 }
 

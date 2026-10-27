@@ -15,7 +15,7 @@ import {
   XIcon,
 } from "lucide-react"
 import { cn } from "cn"
-import { ChooseClusterCard } from "@/components/employees/employee-workspace"
+import { ChooseClusterCard, ModuleDisabledCard } from "@/components/employees/employee-workspace"
 import { ContractStatusBadge, formatContractDate } from "@/components/employees/contract-status-badge"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -84,6 +84,9 @@ export function ContractsWorkspace({ canManage }: ContractsWorkspaceProps) {
   const activeCluster = useActiveCluster()
 
   if (!activeCluster) return <ChooseClusterCard description={CHOOSE_CLUSTER_DESCRIPTION} />
+  if (!activeCluster.modules.includes("contracts")) {
+    return <ModuleDisabledCard module="contracts" clusterLabel={activeCluster.label} />
+  }
 
   return <ClusterContractsPanel key={activeCluster.id} clusterLabel={activeCluster.label} canManage={canManage} />
 }

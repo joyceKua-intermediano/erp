@@ -110,6 +110,13 @@ export type QuotationOption = {
   name: string
 }
 
+// Partner quotations bill a worker employed through a local partner in another country (legacy "Partner<Cluster>").
+export const quotationScopes = ["direct", "partner"] as const
+
+export type QuotationScope = (typeof quotationScopes)[number]
+
+export const quotationScopeSchema = z.enum(quotationScopes)
+
 export type QuotationListItem = {
   id: string
   title: string
@@ -122,6 +129,8 @@ export type QuotationListItem = {
   grossSalary: string
   totalInvoice: number | null
   exchangeRate: string
+  isPartner: boolean
+  partnerName: string | null
 }
 
 export type ClusterQuotations = {

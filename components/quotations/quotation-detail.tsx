@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArchiveIcon, ArrowLeftIcon, PencilIcon, RefreshCwIcon } from "lucide-react"
 import { cn } from "cn"
-import { ChooseClusterCard } from "@/components/employees/employee-workspace"
+import { ChooseClusterCard, ModuleDisabledCard } from "@/components/employees/employee-workspace"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -78,6 +78,9 @@ export function QuotationDetailView({ quotationId, canManage }: QuotationDetailV
   if (!activeCluster) {
     return <ChooseClusterCard description="Quotations are scoped to one Intermediano legal entity at a time." />
   }
+  if (!activeCluster.modules.includes("quotations")) {
+    return <ModuleDisabledCard module="quotations" clusterLabel={activeCluster.label} />
+  }
 
   return (
     <ClusterQuotationDetail
@@ -143,6 +146,7 @@ function QuotationDetailContent({ quotation, canManage }: { quotation: Quotation
   const [sheet, setSheet] = useState({ open: false, key: 0 })
   const [isArchiveOpen, setArchiveOpen] = useState(false)
   const canEdit = canManage && quotation.kind !== null
+  const canArchive = canManage && !quotation.isPartner
   const rate = Number(quotation.exchangeRate)
   const amount = (value: string) => `${quotation.currencyName} ${formatAmount(Number(value))}`
   const fields = quotation.kind ? quotationFields[quotation.kind] : null
@@ -189,6 +193,7 @@ function QuotationDetailContent({ quotation, canManage }: { quotation: Quotation
             </p>
             <div className="flex flex-wrap items-center gap-2">
               {quotation.variant && <Badge>{quotation.variant}</Badge>}
+              {quotation.isPartner && <Badge>Partner{quotation.partnerName ? ` · ${quotation.partnerName}` : ""}</Badge>}
               <Badge variant="outline" className="border-primary/30 text-primary">
                 {quotation.clusterLabel}
               </Badge>
@@ -214,7 +219,7 @@ function QuotationDetailContent({ quotation, canManage }: { quotation: Quotation
                   Edit
                 </Button>
               )}
-              {canManage && (
+              {canArchive && (
                 <Button variant="destructive" onClick={() => setArchiveOpen(true)}>
                   <ArchiveIcon />
                   Archive
@@ -231,6 +236,11 @@ function QuotationDetailContent({ quotation, canManage }: { quotation: Quotation
             quotation.breakdown.sections.map((section) => (
               <BreakdownCard key={section.title} section={section} quotation={quotation} />
             ))
+          ) : quotation.isPartner ? (
+            <p className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
+              Partner quotations are read-only here. Pricing for {quotation.countryName} hasn&apos;t been ported yet, so
+              open the quotation in the legacy app to see its breakdown or edit it.
+            </p>
           ) : (
             <p className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
               The cost breakdown for this cluster hasn&apos;t been ported yet. Open the quotation in the legacy app to
@@ -266,12 +276,14 @@ function QuotationDetailContent({ quotation, canManage }: { quotation: Quotation
               onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
             />
           )}
-          <ArchiveQuotationDialog
-            open={isArchiveOpen}
-            quotation={quotation}
-            onOpenChange={setArchiveOpen}
-            onArchived={() => router.push("/admin/quotations")}
-          />
+          {canArchive && (
+            <ArchiveQuotationDialog
+              open={isArchiveOpen}
+              quotation={quotation}
+              onOpenChange={setArchiveOpen}
+              onArchived={() => router.push("/admin/quotations")}
+            />
+          )}
         </>
       )}
     </div>

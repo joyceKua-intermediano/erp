@@ -16,7 +16,7 @@ import type { EmployeeDetail } from "@/lib/employees"
 import { ArchiveEmployeeDialog } from "./archive-employee-dialog"
 import { ContractStatusBadge, formatContractDate } from "./contract-status-badge"
 import { EmployeeFormSheet } from "./employee-form-sheet"
-import { ChooseClusterCard } from "./employee-workspace"
+import { ChooseClusterCard, ModuleDisabledCard } from "./employee-workspace"
 
 const dateFormatter = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" })
 
@@ -81,6 +81,9 @@ export function EmployeeDetailView({ employeeId, canManage }: EmployeeDetailView
   const activeCluster = useActiveCluster()
 
   if (!activeCluster) return <ChooseClusterCard />
+  if (!activeCluster.modules.includes("employees")) {
+    return <ModuleDisabledCard module="employees" clusterLabel={activeCluster.label} />
+  }
 
   return (
     <ClusterEmployeeDetail

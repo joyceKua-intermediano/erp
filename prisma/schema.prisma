@@ -411,8 +411,19 @@ model intermediano_companies {
   staff_trackers staff_trackers[]
   role_clusters  role_clusters[]
   templates      templates[]
+  modules        intermediano_company_modules[]
 
   @@index([country_id], map: "intermediano_companies_country_id_foreign")
+}
+
+model intermediano_company_modules {
+  intermediano_company_id BigInt                 @db.UnsignedBigInt
+  module_key              String                 @db.VarChar(50)
+  created_at              DateTime?              @db.Timestamp(0)
+  updated_at              DateTime?              @db.Timestamp(0)
+  intermediano_companies  intermediano_companies @relation(fields: [intermediano_company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "intermediano_company_modules_intermediano_company_id_foreign")
+
+  @@id([intermediano_company_id, module_key])
 }
 
 model investments {

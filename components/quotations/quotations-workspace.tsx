@@ -15,7 +15,7 @@ import {
   XIcon,
 } from "lucide-react"
 import { cn } from "cn"
-import { ChooseClusterCard } from "@/components/employees/employee-workspace"
+import { ChooseClusterCard, ModuleDisabledCard } from "@/components/employees/employee-workspace"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -35,7 +35,9 @@ import {
   formatAmount,
   formatQuotationTitle,
   quotationDateFromTitle,
+  quotationScopes,
   type QuotationListItem,
+  type QuotationScope,
 } from "@/lib/quotations"
 import { ArchiveQuotationDialog } from "./archive-quotation-dialog"
 import { QuotationFormSheet } from "./quotation-form-sheet"
@@ -99,11 +101,36 @@ export function QuotationsWorkspace({ canManage }: QuotationsWorkspaceProps) {
   const activeCluster = useActiveCluster()
 
   if (!activeCluster) return <ChooseClusterCard description={CHOOSE_CLUSTER_DESCRIPTION} />
+  if (!activeCluster.modules.includes("quotations")) {
+    return <ModuleDisabledCard module="quotations" clusterLabel={activeCluster.label} />
+  }
 
-  return <ClusterQuotationsPanel key={activeCluster.id} clusterLabel={activeCluster.label} canManage={canManage} />
+  return (
+    <ClusterQuotationsPanel
+      key={activeCluster.id}
+      clusterLabel={activeCluster.label}
+      canManage={canManage}
+      hasPartner={activeCluster.modules.includes("partner")}
+    />
+  )
 }
 
-function ClusterQuotationsPanel({ clusterLabel, canManage }: { clusterLabel: string; canManage: boolean }) {
+const scopeLabels: Record<QuotationScope, string> = {
+  direct: "Direct",
+  partner: "Partner",
+}
+
+function ClusterQuotationsPanel({
+  clusterLabel,
+  canManage,
+  hasPartner,
+}: {
+  clusterLabel: string
+  canManage: boolean
+  hasPartner: boolean
+}) {
+  const [selectedScope, setScope] = useState<QuotationScope>("direct")
+  const scope = hasPartner ? selectedScope : "direct"
   const [search, setSearch] = useState("")
   const [month, setMonth] = useState("")
   const [variantFilter, setVariantFilter] = useState<string | null>(null)
@@ -112,8 +139,9 @@ function ClusterQuotationsPanel({ clusterLabel, canManage }: { clusterLabel: str
     open: false,
     quotation: null,
   })
-  const { data, isPending, isError, isFetching, refetch } = useQuotations()
+  const { data, isPending, isError, isFetching, refetch } = useQuotations(scope)
 
+  const isPartnerView = scope === "partner"
   const quotations = data?.quotations ?? []
   const isPorted = data?.kind != null
   const variants = [...new Set(quotations.map((quotation) => quotation.variant).filter((value) => value !== null))]
@@ -140,8 +168,29 @@ function ClusterQuotationsPanel({ clusterLabel, canManage }: { clusterLabel: str
     },
   ]
 
+  function changeScope(next: QuotationScope) {
+    setScope(next)
+    setVariantFilter(null)
+  }
+
   return (
     <div className="flex animate-in flex-col gap-6 duration-300 fade-in-0 slide-in-from-bottom-2">
+      {hasPartner && (
+        <div className="flex w-fit gap-1 rounded-xl border bg-muted/40 p-1" role="group" aria-label="Quotation type">
+          {quotationScopes.map((option) => (
+            <Button
+              key={option}
+              size="sm"
+              variant={scope === option ? "default" : "ghost"}
+              aria-pressed={scope === option}
+              onClick={() => changeScope(option)}
+            >
+              {scopeLabels[option]}
+            </Button>
+          ))}
+        </div>
+      )}
+
       <section className="grid gap-4 sm:grid-cols-3" aria-label={`${clusterLabel} quotations summary`}>
         {stats.map((stat) => (
           <Card key={stat.label} className="[--card-spacing:--spacing(5)]">
@@ -162,7 +211,13 @@ function ClusterQuotationsPanel({ clusterLabel, canManage }: { clusterLabel: str
         ))}
       </section>
 
-      {data && !isPorted && (
+      {data && isPartnerView && (
+        <p className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
+          Partner quotations are read-only here. Their destination-country pricing hasn&apos;t been ported yet, so use
+          the legacy app to add, edit or price them.
+        </p>
+      )}
+      {data && !isPartnerView && !isPorted && (
         <p className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
           Quotation forms and cost breakdowns for {clusterLabel} haven&apos;t been ported yet. Existing quotations are
           listed, but use the legacy app to add or price them.
@@ -173,12 +228,16 @@ function ClusterQuotationsPanel({ clusterLabel, canManage }: { clusterLabel: str
         <CardHeader className="gap-4 border-b py-5 sm:grid-cols-[1fr_auto]">
           <div className="flex flex-col gap-1">
             <CardTitle className="flex items-center gap-2">
-              Quotations
+              {isPartnerView ? "Partner quotations" : "Quotations"}
               <Badge variant="outline" className="border-primary/30 text-primary">
                 {clusterLabel}
               </Badge>
             </CardTitle>
-            <CardDescription>Monthly payroll cost quotes prepared for customers under this legal entity.</CardDescription>
+            <CardDescription>
+              {isPartnerView
+                ? "Quotes for workers employed through a local partner in another country, billed by this legal entity."
+                : "Monthly payroll cost quotes prepared for customers under this legal entity."}
+            </CardDescription>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="relative w-full sm:w-72">
@@ -293,7 +352,9 @@ function ClusterQuotationsPanel({ clusterLabel, canManage }: { clusterLabel: str
               ) : visibleQuotations.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={5} className="py-12 text-center text-sm text-muted-foreground">
-                    {quotations.length === 0 ? `No quotations in ${clusterLabel} yet.` : "No quotations match your filters."}
+                    {quotations.length === 0
+                      ? `No ${isPartnerView ? "partner " : ""}quotations in ${clusterLabel} yet.`
+                      : "No quotations match your filters."}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -314,7 +375,9 @@ function ClusterQuotationsPanel({ clusterLabel, canManage }: { clusterLabel: str
                           </span>
                           <span className="text-xs text-muted-foreground md:hidden">{quotation.companyName}</span>
                           <span className="hidden text-xs text-muted-foreground md:inline">
-                            {[quotation.countryName, quotation.provinceName].filter(Boolean).join(" · ")}
+                            {[quotation.countryName, quotation.provinceName, quotation.partnerName]
+                              .filter(Boolean)
+                              .join(" · ")}
                           </span>
                         </Link>
                       </TableCell>
@@ -339,7 +402,7 @@ function ClusterQuotationsPanel({ clusterLabel, canManage }: { clusterLabel: str
                               <EyeIcon />
                               View breakdown
                             </DropdownMenuItem>
-                            {canManage && (
+                            {canManage && !quotation.isPartner && (
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
