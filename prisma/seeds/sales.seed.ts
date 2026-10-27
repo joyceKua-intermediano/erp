@@ -1,5 +1,5 @@
 import type { Prisma } from "../../lib/generated/prisma/client"
-import { clusterNames, ids, timestamps } from "./ids"
+import { ids, timestamps } from "./ids"
 import { countryAnnualSetups } from "./reference.seed"
 
 const [colombia2026] = countryAnnualSetups
@@ -10,6 +10,7 @@ export const quotations = [
     title: "Acme Logistics - Operations Analyst (Colombia)",
     company_id: ids.company.acmeLogistics,
     country_id: ids.country.colombia,
+    intermediano_company_id: ids.intermedianoCompany.colombia,
     consultant_id: ids.consultant.andrea,
     currency_name: "COP",
     exchange_rate: "4100.000000",
@@ -22,7 +23,6 @@ export const quotations = [
     uvt_amount: colombia2026.uvt_amount,
     capped_amount: colombia2026.capped_amount,
     is_payroll: true,
-    cluster_name: clusterNames.colombia,
     ...timestamps,
   },
 ] satisfies Prisma.quotationsCreateManyInput[]

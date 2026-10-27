@@ -32,12 +32,6 @@ export const ids = {
   staffTracker: { andreaNorthwind: 1n },
 } as const
 
-export const clusterNames = {
-  brasil: "IntermedianoDoBrasilLtda",
-  colombia: "IntermedianoColombiaSAS",
-  canada: "IntermedianoCanada",
-} as const
-
 export const MOCK_PASSWORD_HASH = "$2y$12$mockmockmockmockmockmuMOCKHASHNOTFORLOGINxxxxxxxxxxxxx"
 
 export const SEEDED_AT = new Date("2026-01-05T00:00:00Z")

@@ -2,7 +2,6 @@
 
 import type { ActionResult } from "@/lib/action-result";
 import { requireClusterPermission } from "@/lib/auth";
-import { resolveClusterName } from "@/lib/cluster-names";
 import {
   contractFormSchema,
   contractIdSchema,
@@ -381,7 +380,6 @@ export async function createContract(clusterId: string, input: ContractFormInput
         ...validated.data,
         contract_type: "employee",
         intermediano_company_id: companyId,
-        cluster_name: await resolveClusterName(companyId),
         created_at: now,
         updated_at: now,
       },

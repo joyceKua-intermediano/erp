@@ -1,5 +1,5 @@
 import type { Prisma } from "../../lib/generated/prisma/client"
-import { clusterNames, ids, timestamps } from "./ids"
+import { ids, timestamps } from "./ids"
 import { colombiaOrdinaryEmployee } from "./templates/colombia-ordinary-employee"
 
 export const templates = [
@@ -32,7 +32,6 @@ export const contracts = [
     gross_salary: "6500000.00",
     contract_type: "employee",
     contract_version: "v1",
-    cluster_name: clusterNames.colombia,
     is_sent_to_employee: true,
     signature: "signatures/mock/juan-perez.png",
     signed_contract: new Date("2026-01-20T15:00:00Z"),
@@ -56,7 +55,6 @@ export const contracts = [
     gross_salary: "5200000.00",
     contract_type: "employee",
     contract_version: "v1",
-    cluster_name: clusterNames.colombia,
     is_sent_to_employee: true,
     is_integral: false,
     ...timestamps,
@@ -74,7 +72,6 @@ export const contracts = [
     gross_salary: "14500.00",
     contract_type: "employee",
     contract_version: "v1",
-    cluster_name: clusterNames.brasil,
     is_sent_to_employee: true,
     signature: "signatures/mock/lucas-almeida.png",
     signed_contract: new Date("2025-10-28T13:00:00Z"),

@@ -2,7 +2,6 @@
 
 import type { ActionResult } from "@/lib/action-result";
 import { requireClusterPermission } from "@/lib/auth";
-import { resolveClusterName } from "@/lib/cluster-names";
 import { normalizeSalary } from "@/lib/contracts";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -21,7 +20,6 @@ import {
 import { calculateQuotation } from "@/lib/quotations/calculators";
 
 type QuotationCluster = {
-  clusterName: string;
   label: string;
   countryId: bigint;
   kind: QuotationClusterKind | null;
@@ -34,11 +32,7 @@ async function findQuotationCluster(companyId: bigint): Promise<QuotationCluster
   });
   if (!company) return null;
 
-  const clusterName = await resolveClusterName(companyId);
-  if (!clusterName) return null;
-
   return {
-    clusterName,
     label: company.name,
     countryId: company.country_id,
     kind: toQuotationClusterKind(company.countries.name),
@@ -46,8 +40,13 @@ async function findQuotationCluster(companyId: bigint): Promise<QuotationCluster
 }
 
 // The quotations table also stores payroll runs (is_payroll = 1), which belong to the Payroll module.
-function clusterQuotationsWhere(clusterName: string) {
-  return { cluster_name: clusterName, is_payroll: false, deleted_at: null } satisfies Prisma.quotationsWhereInput;
+function clusterQuotationsWhere(companyId: bigint) {
+  return {
+    intermediano_company_id: companyId,
+    is_partner: false,
+    is_payroll: false,
+    deleted_at: null,
+  } satisfies Prisma.quotationsWhereInput;
 }
 
 const quotationSelect = {
@@ -147,7 +146,7 @@ export async function getClusterQuotations(clusterId: string): Promise<ClusterQu
     if (!cluster) return { kind: null, quotations: [] };
 
     const quotations = await prisma.quotations.findMany({
-      where: clusterQuotationsWhere(cluster.clusterName),
+      where: clusterQuotationsWhere(companyId),
       orderBy: [{ title: "desc" }, { id: "desc" }],
       select: quotationSelect,
     });
@@ -169,7 +168,7 @@ export async function getQuotation(clusterId: string, quotationId: string): Prom
     if (!cluster) return null;
 
     const row = await prisma.quotations.findFirst({
-      where: { id: BigInt(parsedId.data), ...clusterQuotationsWhere(cluster.clusterName) },
+      where: { id: BigInt(parsedId.data), ...clusterQuotationsWhere(companyId) },
       select: quotationSelect,
     });
     if (!row) return null;
@@ -256,7 +255,7 @@ type PayrollCostsWriteData = {
 };
 
 type QuotationWriteData = {
-  quotation: Omit<Prisma.quotationsUncheckedCreateInput, "country_id" | "cluster_name">;
+  quotation: Omit<Prisma.quotationsUncheckedCreateInput, "country_id" | "intermediano_company_id">;
   payrollCosts: PayrollCostsWriteData | null;
 };
 
@@ -368,7 +367,7 @@ export async function createQuotation(clusterId: string, input: QuotationFormInp
         data: {
           ...validated.data.quotation,
           country_id: cluster.countryId,
-          cluster_name: cluster.clusterName,
+          intermediano_company_id: companyId,
           is_payroll: false,
           created_at: now,
           updated_at: now,
@@ -404,7 +403,7 @@ export async function updateQuotation(
     const cluster = await findQuotationCluster(companyId);
     if (!cluster) return { ok: false, error: "This cluster no longer exists." };
 
-    const where = { id: BigInt(parsedId.data), ...clusterQuotationsWhere(cluster.clusterName) };
+    const where = { id: BigInt(parsedId.data), ...clusterQuotationsWhere(companyId) };
     const existing = await prisma.quotations.findFirst({
       where,
       select: { company_id: true, dependent: true, payroll_costs: quotationSelect.payroll_costs },
@@ -452,7 +451,7 @@ export async function archiveQuotation(clusterId: string, quotationId: string): 
 
     const now = new Date();
     const result = await prisma.quotations.updateMany({
-      where: { id: BigInt(parsedId.data), ...clusterQuotationsWhere(cluster.clusterName) },
+      where: { id: BigInt(parsedId.data), ...clusterQuotationsWhere(companyId) },
       data: { deleted_at: now, updated_at: now },
     });
     if (result.count === 0) return { ok: false, error: "This quotation is already archived." };
