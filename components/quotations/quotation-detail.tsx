@@ -106,7 +106,7 @@ function ClusterQuotationDetail({
   return <QuotationDetailContent quotation={quotation} canManage={canManage} />
 }
 
-function BreakdownCard({ section, quotation }: { section: BreakdownSection; quotation: QuotationDetail }) {
+export function BreakdownCard({ section, quotation }: { section: BreakdownSection; quotation: QuotationDetail }) {
   const rate = Number(quotation.exchangeRate)
   return (
     <Card className="gap-0 py-0">
@@ -141,18 +141,12 @@ function BreakdownCard({ section, quotation }: { section: BreakdownSection; quot
   )
 }
 
-function QuotationDetailContent({ quotation, canManage }: { quotation: QuotationDetail; canManage: boolean }) {
-  const router = useRouter()
-  const [sheet, setSheet] = useState({ open: false, key: 0 })
-  const [isArchiveOpen, setArchiveOpen] = useState(false)
-  const canEdit = canManage && quotation.kind !== null
-  const canArchive = canManage && !quotation.isPartner
-  const rate = Number(quotation.exchangeRate)
+export function quotationInputRows(quotation: QuotationDetail): [string, string][] {
   const amount = (value: string) => `${quotation.currencyName} ${formatAmount(Number(value))}`
   const fields = quotation.kind ? quotationFields[quotation.kind] : null
   const optional = (shown: boolean, row: [string, string]): [string, string][] => (shown ? [row] : [])
 
-  const inputs: [string, string][] = [
+  return [
     ["Gross salary", amount(quotation.grossSalary)],
     ["Exchange rate", `${quotation.exchangeRate} ${quotation.currencyName} per ${quotation.billingCurrency}`],
     ["Type of fee", feeTypeLabels[quotation.isFixFee ? "fixed" : "percentage"]],
@@ -175,6 +169,16 @@ function QuotationDetailContent({ quotation, canManage }: { quotation: Quotation
       cost.isPercent ? `${quotation[cost.key]}%` : amount(quotation[cost.key]),
     ]),
   ]
+}
+
+function QuotationDetailContent({ quotation, canManage }: { quotation: QuotationDetail; canManage: boolean }) {
+  const router = useRouter()
+  const [sheet, setSheet] = useState({ open: false, key: 0 })
+  const [isArchiveOpen, setArchiveOpen] = useState(false)
+  const canEdit = canManage && quotation.kind !== null
+  const canArchive = canManage && !quotation.isPartner
+  const rate = Number(quotation.exchangeRate)
+  const inputs = quotationInputRows(quotation)
 
   return (
     <div className="flex animate-in flex-col gap-6 duration-300 fade-in-0 slide-in-from-bottom-2">
