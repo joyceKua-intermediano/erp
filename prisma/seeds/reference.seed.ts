@@ -33,6 +33,12 @@ export const provisionTypes = [
   { id: ids.provisionType.prima, name: "Prima", ...timestamps },
   { id: ids.provisionType.cesantias, name: "Cesantias", ...timestamps },
   { id: ids.provisionType.vacation, name: "Vacation", ...timestamps },
+  { id: ids.provisionType.interesesDeCesantias, name: "Intereses de Cesantias", ...timestamps },
+  { id: ids.provisionType.indemnization, name: "Indemnization", ...timestamps },
+  { id: ids.provisionType.salary13th, name: "13th Salary", ...timestamps },
+  { id: ids.provisionType.termination, name: "Termination", ...timestamps },
+  { id: ids.provisionType.vacationBonus, name: "1/3 Vacation Bonus", ...timestamps },
+  { id: ids.provisionType.indemnification, name: "Indemnification", ...timestamps },
 ] satisfies Prisma.provision_typesCreateManyInput[]
 
 export const industryFields = [

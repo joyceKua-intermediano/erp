@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import {
   Building2Icon,
   BuildingIcon,
+  CoinsIcon,
   FileCodeIcon,
   FileSignatureIcon,
   FileTextIcon,
@@ -38,11 +39,12 @@ const overviewItems: GatedNavItem[] = [
   { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboardIcon },
 ]
 
-// Only modules with a page in the new app are listed; add Timesheets, Expenses and Payroll here once they're built.
+// Only modules with a page in the new app are listed; add Timesheets and Expenses here once they're built.
 const clusterItems: ClusterNavItem[] = [
   { title: "Quotations", href: "/admin/quotations", icon: FileTextIcon, permission: "quotations.view", module: "quotations" },
   { title: "Employees", href: "/admin/employees", icon: UsersIcon, permission: "employees.view", module: "employees" },
   { title: "Contracts", href: "/admin/contracts", icon: FileSignatureIcon, permission: "contracts.view", module: "contracts" },
+  { title: "Payroll", href: "/admin/payroll", icon: CoinsIcon, permission: "payroll.view", module: "payroll" },
 ]
 
 const sharedGroups: { label: string; items: GatedNavItem[] }[] = [

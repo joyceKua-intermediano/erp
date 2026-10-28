@@ -25,6 +25,7 @@ import {
   toQuotationFormInput,
   type FeeType,
   type QuotationDetail,
+  type QuotationFieldConfig,
   type QuotationFormInput,
   type QuotationOption,
 } from "@/lib/quotations"
@@ -35,7 +36,7 @@ type TextKey = {
   [Key in keyof QuotationFormInput]: QuotationFormInput[Key] extends string ? Key : never
 }[keyof QuotationFormInput]
 
-type Item = { label: string; value: string }
+export type Item = { label: string; value: string }
 
 const yesNoItems: Item[] = [
   { label: "No", value: "no" },
@@ -76,12 +77,12 @@ export function QuotationFormSheet({ open, quotation, clusterLabel, formKey, onO
 }
 
 // Keeps the saved value selectable even when it no longer appears in the current options.
-function withCurrent(options: QuotationOption[], currentId: string | null, currentName: string | null) {
+export function withCurrent(options: QuotationOption[], currentId: string | null, currentName: string | null) {
   if (!currentId || !currentName || options.some((option) => option.id === currentId)) return options
   return [{ id: currentId, name: currentName }, ...options]
 }
 
-function FormSection({ title, children }: { title: string; children: ReactNode }) {
+export function FormSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-4">
       <h3 className="text-xs font-semibold tracking-wide text-primary uppercase">{title}</h3>
@@ -102,7 +103,7 @@ type ChoiceFieldProps = {
   onChange: (value: string) => void
 }
 
-function ChoiceField({ id, label, value, items, placeholder, description, disabled, errors, onChange }: ChoiceFieldProps) {
+export function ChoiceField({ id, label, value, items, placeholder, description, disabled, errors, onChange }: ChoiceFieldProps) {
   return (
     <Field data-invalid={Boolean(errors)}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
@@ -141,7 +142,6 @@ function QuotationForm({ quotation, onDone }: { quotation: QuotationDetail | nul
 
   const companies = withCurrent(options?.companies ?? [], quotation?.companyId ?? null, quotation?.companyName ?? null)
   const provinces = withCurrent(options?.provinces ?? [], quotation?.provinceId ?? null, quotation?.provinceName ?? null)
-  const toItems = (rows: QuotationOption[]) => rows.map((row) => ({ label: row.name, value: row.id }))
 
   function update<Key extends keyof QuotationFormInput>(key: Key, value: QuotationFormInput[Key]) {
     setValues((current) => ({ ...current, [key]: value }))
@@ -159,6 +159,80 @@ function QuotationForm({ quotation, onDone }: { quotation: QuotationDetail | nul
     }
     saveQuotation.mutate({ quotationId: quotation?.id ?? null, input: values }, { onSuccess: onDone })
   }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-y-auto" noValidate>
+      <div className="flex flex-col gap-8 px-6 py-6">
+        {formOptions.isError && (
+          <p role="alert" className="text-sm text-destructive">
+            The form options couldn&apos;t be loaded. Close the form and try again.
+          </p>
+        )}
+        {options && !fields && (
+          <p role="alert" className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
+            Quotations for this cluster haven&apos;t been ported to the new app yet. Use the legacy app for now.
+          </p>
+        )}
+
+        <QuotationFields
+          values={values}
+          fieldErrors={fieldErrors}
+          fields={fields}
+          companies={companies}
+          provinces={provinces}
+          isLoadingOptions={formOptions.isPending}
+          optionsUnavailable={optionsUnavailable}
+          onChange={update}
+        />
+      </div>
+
+      <SheetFooter className="mt-auto border-t px-6 py-4">
+        {saveQuotation.isError && (
+          <p role="alert" className="text-sm text-destructive">
+            {saveQuotation.error.message}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onDone} disabled={saveQuotation.isPending}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={saveQuotation.isPending || optionsUnavailable || !fields}>
+            {saveQuotation.isPending && <Loader2Icon className="animate-spin" />}
+            {quotation ? "Save changes" : "Add quotation"}
+          </Button>
+        </div>
+      </SheetFooter>
+    </form>
+  )
+}
+
+type QuotationFieldsProps = {
+  values: QuotationFormInput
+  fieldErrors: FieldErrors
+  fields: QuotationFieldConfig | null
+  companies: QuotationOption[]
+  provinces: QuotationOption[]
+  isLoadingOptions: boolean
+  optionsUnavailable: boolean
+  onChange: <Key extends keyof QuotationFormInput>(key: Key, value: QuotationFormInput[Key]) => void
+  // The payroll form calls its first section "Payroll" and adds its consultant there.
+  noun?: string
+  children?: ReactNode
+}
+
+export function QuotationFields({
+  values,
+  fieldErrors,
+  fields,
+  companies,
+  provinces,
+  isLoadingOptions,
+  optionsUnavailable,
+  onChange: update,
+  noun = "quotation",
+  children,
+}: QuotationFieldsProps) {
+  const toItems = (rows: QuotationOption[]) => rows.map((row) => ({ label: row.name, value: row.id }))
 
   function textField(
     key: TextKey,
@@ -187,136 +261,108 @@ function QuotationForm({ quotation, onDone }: { quotation: QuotationDetail | nul
 
   const billing = values.billingCurrency.trim() || "the billing currency"
   const isFixedFee = values.feeType === "fixed"
+  const sectionTitle = noun.charAt(0).toUpperCase() + noun.slice(1)
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-y-auto" noValidate>
-      <div className="flex flex-col gap-8 px-6 py-6">
-        {formOptions.isError && (
-          <p role="alert" className="text-sm text-destructive">
-            The form options couldn&apos;t be loaded. Close the form and try again.
-          </p>
-        )}
-        {options && !fields && (
-          <p role="alert" className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
-            Quotations for this cluster haven&apos;t been ported to the new app yet. Use the legacy app for now.
-          </p>
-        )}
-
-        <FormSection title="Quotation">
-          <FieldGroup className="grid gap-4 sm:grid-cols-2">
-            {fields?.quotationType && (
-              <ChoiceField
-                id="quotation-isIntegral"
-                label="Type of quotation"
-                value={values.isIntegral ? "integral" : "ordinary"}
-                items={quotationTypeItems}
-                onChange={(value) => update("isIntegral", value === "integral")}
-              />
-            )}
-            {textField("quotationDate", "Date", { type: "date", placeholder: "" })}
+    <>
+      <FormSection title={sectionTitle}>
+        <FieldGroup className="grid gap-4 sm:grid-cols-2">
+          {fields?.quotationType && (
             <ChoiceField
-              id="quotation-companyId"
-              label="Customer"
-              value={values.companyId}
-              items={toItems(companies)}
-              placeholder={formOptions.isPending ? "Loading…" : "Choose a customer"}
+              id="quotation-isIntegral"
+              label={`Type of ${noun}`}
+              value={values.isIntegral ? "integral" : "ordinary"}
+              items={quotationTypeItems}
+              onChange={(value) => update("isIntegral", value === "integral")}
+            />
+          )}
+          {textField("quotationDate", "Date", { type: "date", placeholder: "" })}
+          <ChoiceField
+            id="quotation-companyId"
+            label="Customer"
+            value={values.companyId}
+            items={toItems(companies)}
+            placeholder={isLoadingOptions ? "Loading…" : "Choose a customer"}
+            disabled={optionsUnavailable}
+            errors={fieldErrors.companyId}
+            onChange={(value) => update("companyId", value)}
+          />
+          {children}
+          {fields?.province && (
+            <ChoiceField
+              id="quotation-provinceId"
+              label="Province"
+              value={values.provinceId}
+              items={toItems(provinces)}
+              placeholder={isLoadingOptions ? "Loading…" : "Choose a province"}
+              description="Quebec uses its own payroll costs (QPP, QPIP, HSF, CNT, CNESST)."
               disabled={optionsUnavailable}
-              errors={fieldErrors.companyId}
-              onChange={(value) => update("companyId", value)}
+              errors={fieldErrors.provinceId}
+              onChange={(value) => update("provinceId", value)}
             />
-            {fields?.province && (
-              <ChoiceField
-                id="quotation-provinceId"
-                label="Province"
-                value={values.provinceId}
-                items={toItems(provinces)}
-                placeholder={formOptions.isPending ? "Loading…" : "Choose a province"}
-                description="Quebec uses its own payroll costs (QPP, QPIP, HSF, CNT, CNESST)."
-                disabled={optionsUnavailable}
-                errors={fieldErrors.provinceId}
-                onChange={(value) => update("provinceId", value)}
-              />
-            )}
-          </FieldGroup>
-        </FormSection>
+          )}
+        </FieldGroup>
+      </FormSection>
 
-        <FormSection title="Currency">
-          <FieldGroup className="grid gap-4 sm:grid-cols-3">
-            {textField("currencyName", "Payroll currency", { placeholder: "COP", isText: true })}
-            {textField("billingCurrency", "Billing currency", { placeholder: "USD", isText: true })}
-            {textField("exchangeRate", "Exchange rate", {
-              placeholder: "4100",
-              description: `Payroll currency per 1 ${billing}.`,
-            })}
-          </FieldGroup>
-        </FormSection>
+      <FormSection title="Currency">
+        <FieldGroup className="grid gap-4 sm:grid-cols-3">
+          {textField("currencyName", "Payroll currency", { placeholder: "COP", isText: true })}
+          {textField("billingCurrency", "Billing currency", { placeholder: "USD", isText: true })}
+          {textField("exchangeRate", "Exchange rate", {
+            placeholder: "4100",
+            description: `Payroll currency per 1 ${billing}.`,
+          })}
+        </FieldGroup>
+      </FormSection>
 
-        <FormSection title="Salary and fees">
+      <FormSection title="Salary and fees">
+        <FieldGroup className="grid gap-4 sm:grid-cols-2">
+          {textField("grossSalary", "Gross salary", { placeholder: "6500000.00" })}
+          <ChoiceField
+            id="quotation-dependent"
+            label="Dependent"
+            value={values.dependent ? "yes" : "no"}
+            items={yesNoItems}
+            onChange={(value) => update("dependent", value === "yes")}
+          />
+          <ChoiceField
+            id="quotation-feeType"
+            label="Type of fee"
+            value={values.feeType}
+            items={feeTypeItems}
+            onChange={(value) => update("feeType", (value || "percentage") as FeeType)}
+          />
+          {textField("fee", isFixedFee ? `Fee (${billing})` : "Fee (%)", {
+            placeholder: isFixedFee ? "500.00" : "12",
+            description: isFixedFee ? "Converted with the exchange rate." : undefined,
+          })}
+          {textField("bankFee", `Bank fee (${billing})`, { description: "Converted with the exchange rate." })}
+        </FieldGroup>
+      </FormSection>
+
+      <FormSection title="Allowances">
+        <FieldGroup className="grid gap-4 sm:grid-cols-2">
+          {textField("bonus", "Bonus")}
+          {textField("homeAllowance", "Home allowance")}
+          {textField("medicalAllowance", "Medical allowance")}
+          {fields?.transportAllowance &&
+            textField("transportAllowance", fields.transportAllowanceLabel ?? "Transport allowance")}
+          {fields?.foodAllowance && textField("foodAllowance", "Food allowance")}
+          {fields?.familyAllowance && textField("familyAllowance", "Family allowance")}
+          {textField("internetAllowance", "Internet allowance")}
+          {fields?.legalGratification && textField("legalGratification", "Legal gratification")}
+        </FieldGroup>
+      </FormSection>
+
+      {fields && fields.payrollCosts.length > 0 && (
+        <FormSection title="Payroll costs">
           <FieldGroup className="grid gap-4 sm:grid-cols-2">
-            {textField("grossSalary", "Gross salary", { placeholder: "6500000.00" })}
-            <ChoiceField
-              id="quotation-dependent"
-              label="Dependent"
-              value={values.dependent ? "yes" : "no"}
-              items={yesNoItems}
-              onChange={(value) => update("dependent", value === "yes")}
-            />
-            <ChoiceField
-              id="quotation-feeType"
-              label="Type of fee"
-              value={values.feeType}
-              items={feeTypeItems}
-              onChange={(value) => update("feeType", (value || "percentage") as FeeType)}
-            />
-            {textField("fee", isFixedFee ? `Fee (${billing})` : "Fee (%)", {
-              placeholder: isFixedFee ? "500.00" : "12",
-              description: isFixedFee ? "Converted with the exchange rate." : undefined,
-            })}
-            {textField("bankFee", `Bank fee (${billing})`, { description: "Converted with the exchange rate." })}
+            {fields.payrollCosts.map((cost) => (
+              <Fragment key={cost.key}>{textField(cost.key, cost.label)}</Fragment>
+            ))}
           </FieldGroup>
         </FormSection>
-
-        <FormSection title="Allowances">
-          <FieldGroup className="grid gap-4 sm:grid-cols-2">
-            {textField("bonus", "Bonus")}
-            {textField("homeAllowance", "Home allowance")}
-            {textField("medicalAllowance", "Medical allowance")}
-            {fields?.transportAllowance &&
-              textField("transportAllowance", fields.transportAllowanceLabel ?? "Transport allowance")}
-            {fields?.foodAllowance && textField("foodAllowance", "Food allowance")}
-            {fields?.familyAllowance && textField("familyAllowance", "Family allowance")}
-            {textField("internetAllowance", "Internet allowance")}
-            {fields?.legalGratification && textField("legalGratification", "Legal gratification")}
-          </FieldGroup>
-        </FormSection>
-
-        {fields && fields.payrollCosts.length > 0 && (
-          <FormSection title="Payroll costs">
-            <FieldGroup className="grid gap-4 sm:grid-cols-2">
-              {fields.payrollCosts.map((cost) => (
-                <Fragment key={cost.key}>{textField(cost.key, cost.label)}</Fragment>
-              ))}
-            </FieldGroup>
-          </FormSection>
-        )}
-      </div>
-
-      <SheetFooter className="mt-auto border-t px-6 py-4">
-        {saveQuotation.isError && (
-          <p role="alert" className="text-sm text-destructive">
-            {saveQuotation.error.message}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onDone} disabled={saveQuotation.isPending}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={saveQuotation.isPending || optionsUnavailable || !fields}>
-            {saveQuotation.isPending && <Loader2Icon className="animate-spin" />}
-            {quotation ? "Save changes" : "Add quotation"}
-          </Button>
-        </div>
-      </SheetFooter>
-    </form>
+      )}
+    </>
   )
 }
