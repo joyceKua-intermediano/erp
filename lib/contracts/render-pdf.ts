@@ -50,7 +50,7 @@ export async function renderContractPdf(
   if (!templateSource?.trim()) return { ok: false, reason: "no_template" }
 
   try {
-    return { ok: true, pdf: renderPdf(templateSource, data), fileName: toFileName(data.employee.name, data.contract.startDate?.iso ?? null) }
+    return { ok: true, pdf: await renderPdf(templateSource, data), fileName: toFileName(data.employee.name, data.contract.startDate?.iso ?? null) }
   } catch (error) {
     if (error instanceof TypstRenderError) return { ok: false, reason: "template_error", diagnostics: error.diagnostics }
     throw error

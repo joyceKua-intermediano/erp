@@ -98,9 +98,11 @@ async function fetchPreview(body: string): Promise<TemplatePreview> {
 // The request body doubles as the cache key, so identical content never renders twice.
 export function useTemplatePreview(
   content: TemplatePreviewContent | null,
-  sample: { contractId: string; clusterId: string } | null
+  sample: { contractId: string; clusterId: string } | null,
+  templateId: string | null = null
 ) {
-  const body = content && sample ? JSON.stringify({ ...content, ...sample }) : null
+  const body =
+    content && sample ? JSON.stringify({ ...content, ...sample, ...(templateId !== null && { templateId }) }) : null
 
   return useQuery({
     queryKey: ["templates", "preview", body] as const,

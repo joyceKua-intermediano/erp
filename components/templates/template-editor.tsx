@@ -35,6 +35,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useClusters } from "@/hooks/use-clusters"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { useSampleContracts, useSaveTemplate, useTemplate, useTemplatePreview } from "@/hooks/use-templates"
 import { contractKindLabels, contractKinds } from "@/lib/contracts"
 import {
@@ -76,15 +77,6 @@ const templatesBackLink = (
     All templates
   </Link>
 )
-
-function useDebouncedValue<T>(value: T, delayMs: number) {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebounced(value), delayMs)
-    return () => window.clearTimeout(timer)
-  }, [value, delayMs])
-  return debounced
-}
 
 type TemplateEditorProps = {
   templateId: string | null
@@ -180,7 +172,8 @@ function TemplateEditorForm({ template, canManage }: { template: ContractTemplat
 
   const preview = useTemplatePreview(
     hasContent ? previewContent : null,
-    sample ? { contractId: sample.id, clusterId: sample.clusterId } : null
+    sample ? { contractId: sample.id, clusterId: sample.clusterId } : null,
+    template?.id ?? null
   )
   const previewData = preview.data ?? null
   const previewUrl = previewData?.status === "ready" ? previewData.url : null

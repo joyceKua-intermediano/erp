@@ -1,5 +1,7 @@
 import { z } from "zod"
 import type { ContractStatus } from "./employees"
+import type { Prisma } from "./generated/prisma/client"
+import { listSearchSchema, pageNumberSchema } from "./pagination"
 
 // Legacy stores the contract kind in contract_type and keeps one Filament resource per kind.
 export const contractKinds = ["employee", "customer", "partner"] as const
@@ -37,6 +39,37 @@ export function deriveContractStatus(contract: ContractSnapshot | undefined, now
   return "active"
 }
 
+const signedWhere = (field: "signature" | "admin_signature"): Prisma.contractsWhereInput => ({
+  AND: [{ [field]: { not: null } }, { [field]: { notIn: ["", PENDING_SIGNATURE] } }],
+})
+
+const unsignedWhere = (field: "signature" | "admin_signature"): Prisma.contractsWhereInput => ({
+  OR: [{ [field]: null }, { [field]: { in: ["", PENDING_SIGNATURE] } }],
+})
+
+// The SQL form of deriveContractStatus for the statuses lists count, so the counts match the badges.
+export function contractStatusWhere(status: "active" | "pending_signature", now: Date): Prisma.contractsWhereInput {
+  const current: Prisma.contractsWhereInput[] = [
+    { OR: [{ end_date: null }, { end_date: { gte: now } }] },
+    { OR: [{ start_date: null }, { start_date: { lte: now } }] },
+  ]
+  if (status === "active") return { AND: [...current, signedWhere("signature"), signedWhere("admin_signature")] }
+  return { AND: [...current, { OR: [unsignedWhere("signature"), unsignedWhere("admin_signature")] }] }
+}
+
+export const contractPeriodFilters = ["all", "fixed", "open"] as const
+
+export type ContractPeriodFilter = (typeof contractPeriodFilters)[number]
+
+export const contractListQuerySchema = z.object({
+  page: pageNumberSchema,
+  search: listSearchSchema,
+  kind: z.enum(contractKinds).nullable().catch(null),
+  period: z.enum(contractPeriodFilters).catch("all"),
+})
+
+export type ContractListQuery = z.output<typeof contractListQuerySchema>
+
 export type ClusterContract = {
   id: string
   kind: ContractKind | null
@@ -49,6 +82,15 @@ export type ClusterContract = {
   status: ContractStatus
   employeeSigned: boolean
   adminSigned: boolean
+}
+
+export type ClusterContracts = {
+  // One page of contracts matching the query.
+  contracts: ClusterContract[]
+  // How many contracts match the query across all pages.
+  total: number
+  // Figures for the whole cluster, ignoring the query.
+  stats: { contracts: number; active: number; pendingSignature: number }
 }
 
 export type SupplementaryDetails = {
@@ -98,6 +140,26 @@ export type ContractFormOptions = {
   templates: ContractOption[]
   clusterCountryId: string | null
   showsSalaryMode: boolean
+}
+
+// A cluster picks from its own templates plus shared ones (no cluster) made for its country or for no country.
+// Other clusters' templates stay private even when they share a country.
+export function clusterTemplatesFilter(companyId: bigint, countryId: bigint | null): Prisma.templatesWhereInput {
+  return {
+    deleted_at: null,
+    AND: [
+      { OR: [{ contract_type: null }, { contract_type: "employee" }] },
+      {
+        OR: [
+          { intermediano_company_id: companyId },
+          {
+            intermediano_company_id: null,
+            OR: [{ country_id: null }, ...(countryId === null ? [] : [{ country_id: countryId }])],
+          },
+        ],
+      },
+    ],
+  }
 }
 
 export const salaryModes = ["ordinary", "integral"] as const

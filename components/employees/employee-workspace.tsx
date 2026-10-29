@@ -27,20 +27,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { TablePager } from "@/components/table-pager"
 import { useActiveCluster } from "@/hooks/use-clusters"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { useEmployees } from "@/hooks/use-employees"
 import { clusterModuleDetails, type ClusterModuleKey } from "@/lib/cluster-modules"
-import type { ClusterEmployee } from "@/lib/employees"
+import type { ClusterEmployees } from "@/lib/employees"
+import { SEARCH_DEBOUNCE_MS } from "@/lib/pagination"
 import { ContractStatusBadge, formatContractDate } from "./contract-status-badge"
 import { EmployeeFormSheet } from "./employee-form-sheet"
-
-function matchesSearch(employee: ClusterEmployee, query: string) {
-  const needle = query.trim().toLowerCase()
-  if (!needle) return true
-  return [employee.name, employee.email, employee.position, employee.clientCompany]
-    .filter((value): value is string => Boolean(value))
-    .some((value) => value.toLowerCase().includes(needle))
-}
 
 export function ChooseClusterCard({
   description = "Employee records are scoped to one Intermediano legal entity at a time.",
@@ -85,21 +80,18 @@ export function ModuleDisabledCard({ module, clusterLabel }: { module: ClusterMo
 }
 
 function EmployeeStats({
-  employees,
+  figures,
   isPending,
   clusterLabel,
 }: {
-  employees: ClusterEmployee[]
+  figures: ClusterEmployees["stats"] | undefined
   isPending: boolean
   clusterLabel: string
 }) {
-  const activeCount = employees.filter((employee) => employee.contractStatus === "active").length
-  const pendingCount = employees.filter((employee) => employee.contractStatus === "pending_signature").length
-
   const stats = [
-    { label: "Employees", value: employees.length, icon: UsersIcon },
-    { label: "Active contracts", value: activeCount, icon: UserCheckIcon },
-    { label: "Pending signature", value: pendingCount, icon: FileSignatureIcon },
+    { label: "Employees", value: figures?.employees ?? 0, icon: UsersIcon },
+    { label: "Active contracts", value: figures?.active ?? 0, icon: UserCheckIcon },
+    { label: "Pending signature", value: figures?.pendingSignature ?? 0, icon: FileSignatureIcon },
   ]
 
   return (
@@ -137,9 +129,9 @@ export function EmployeeSummary() {
 }
 
 function ClusterEmployeeSummary({ clusterLabel }: { clusterLabel: string }) {
-  const { data, isPending } = useEmployees()
+  const { data, isPending } = useEmployees({ page: 1, search: "" })
 
-  return <EmployeeStats employees={data ?? []} isPending={isPending} clusterLabel={clusterLabel} />
+  return <EmployeeStats figures={data?.stats} isPending={isPending} clusterLabel={clusterLabel} />
 }
 
 type EmployeeWorkspaceProps = {
@@ -159,16 +151,23 @@ export function EmployeeWorkspace({ canManage }: EmployeeWorkspaceProps) {
 
 function ClusterEmployeesPanel({ clusterLabel, canManage }: { clusterLabel: string; canManage: boolean }) {
   const [search, setSearch] = useState("")
+  const [page, setPage] = useState(1)
   const [sheet, setSheet] = useState({ open: false, key: 0 })
-  const { data, isPending, isError, isFetching, refetch } = useEmployees()
+  const debouncedSearch = useDebouncedValue(search.trim(), SEARCH_DEBOUNCE_MS)
+  const { data, isPending, isError, isFetching, refetch } = useEmployees({ page, search: debouncedSearch })
 
-  const employees = data ?? []
-  const visibleEmployees = employees.filter((employee) => matchesSearch(employee, search))
+  const visibleEmployees = data?.employees ?? []
+  const clusterTotal = data?.stats.employees ?? 0
   const trimmedSearch = search.trim()
+
+  function updateSearch(value: string) {
+    setSearch(value)
+    setPage(1)
+  }
 
   return (
     <div className="flex animate-in flex-col gap-6 duration-300 fade-in-0 slide-in-from-bottom-2">
-      <EmployeeStats employees={employees} isPending={isPending} clusterLabel={clusterLabel} />
+      <EmployeeStats figures={data?.stats} isPending={isPending} clusterLabel={clusterLabel} />
 
       <Card className="gap-0 py-0">
         <CardHeader className="gap-4 border-b py-5 sm:grid-cols-[1fr_auto]">
@@ -187,7 +186,7 @@ function ClusterEmployeesPanel({ clusterLabel, canManage }: { clusterLabel: stri
                 <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={search}
-                  onChange={(event) => setSearch(event.target.value)}
+                  onChange={(event) => updateSearch(event.target.value)}
                   placeholder="Search name, email, position…"
                   aria-label="Search employees"
                   className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
@@ -202,11 +201,11 @@ function ClusterEmployeesPanel({ clusterLabel, canManage }: { clusterLabel: stri
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge className="bg-primary/10 text-primary">
-                {isPending ? "Loading…" : `${visibleEmployees.length} of ${employees.length}`}
+                {isPending ? "Loading…" : `${data?.total ?? 0} of ${clusterTotal}`}
               </Badge>
               {trimmedSearch && (
                 <Badge
-                  render={<button type="button" onClick={() => setSearch("")} />}
+                  render={<button type="button" onClick={() => updateSearch("")} />}
                   className="cursor-pointer gap-1 bg-primary text-primary-foreground hover:bg-primary/85"
                 >
                   &ldquo;{trimmedSearch}&rdquo;
@@ -276,7 +275,7 @@ function ClusterEmployeesPanel({ clusterLabel, canManage }: { clusterLabel: stri
                 ) : visibleEmployees.length === 0 ? (
                   <TableRow className="hover:bg-transparent">
                     <TableCell colSpan={5} className="py-12 text-center text-sm text-muted-foreground">
-                      {employees.length === 0
+                      {clusterTotal === 0
                         ? `No employees in ${clusterLabel} yet.`
                         : "No employees match your search."}
                     </TableCell>
@@ -305,6 +304,9 @@ function ClusterEmployeesPanel({ clusterLabel, canManage }: { clusterLabel: stri
                 )}
               </TableBody>
             </Table>
+          )}
+          {data && !isError && (
+            <TablePager page={page} total={data.total} onPageChange={setPage} isFetching={isFetching} />
           )}
         </CardContent>
       </Card>

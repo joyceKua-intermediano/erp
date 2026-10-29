@@ -6,9 +6,12 @@ export type LedgerRun = {
   paid: { name: string; amount: number }[]
 }
 
-function provisionAmount(breakdown: QuotationBreakdown | null, label: string) {
+// Lines are matched by their stable key first, so a renamed label still finds older runs' provisions.
+function provisionAmount(breakdown: QuotationBreakdown | null, { name, line: label }: PayrollProvisionType) {
   const section = breakdown?.sections.find(({ title }) => title === "Provisions")
-  return section?.lines.find((line) => !line.isTotal && line.label === label)?.amount ?? 0
+  const lines = section?.lines.filter((line) => !line.isTotal) ?? []
+  const match = lines.find((line) => line.key === name) ?? lines.find((line) => !line.key && line.label === label)
+  return match?.amount ?? 0
 }
 
 function paidAmount(run: LedgerRun, name: string) {
@@ -23,8 +26,9 @@ export function buildProvisionLedger(
 ): ProvisionLedger {
   const totals: ProvisionLedgerFigures = { accrued: 0, previousPaid: 0, accumulated: 0, currentPaid: 0, balance: 0 }
 
-  const rows = types.map(({ name, line }) => {
-    const accrued = [...previous, current].reduce((sum, run) => sum + provisionAmount(run.breakdown, line), 0)
+  const rows = types.map((type) => {
+    const { name } = type
+    const accrued = [...previous, current].reduce((sum, run) => sum + provisionAmount(run.breakdown, type), 0)
     const previousPaid = previous.reduce((sum, run) => sum + paidAmount(run, name), 0)
     const accumulated = accrued - previousPaid
     const currentPaid = paidAmount(current, name)

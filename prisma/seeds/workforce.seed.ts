@@ -1,5 +1,6 @@
 import type { Prisma } from "../../lib/generated/prisma/client"
-import { ids, MOCK_PASSWORD_HASH, timestamps } from "./ids"
+import { daysInMonth, sumHours, toStoredDays } from "../../lib/timesheets"
+import { EMPLOYEE_DEV_PASSWORD_HASH, ids, timestamps } from "./ids"
 
 export const employees = [
   {
@@ -7,7 +8,7 @@ export const employees = [
     name: "Juan Perez",
     consultant_id: ids.consultant.andrea,
     email: "juan.perez@employee.test",
-    password: MOCK_PASSWORD_HASH,
+    password: EMPLOYEE_DEV_PASSWORD_HASH,
     intermediano_company_id: ids.intermedianoCompany.colombia,
     ...timestamps,
   },
@@ -16,7 +17,7 @@ export const employees = [
     name: "Camila Torres",
     consultant_id: ids.consultant.andrea,
     email: "camila.torres@employee.test",
-    password: MOCK_PASSWORD_HASH,
+    password: EMPLOYEE_DEV_PASSWORD_HASH,
     intermediano_company_id: ids.intermedianoCompany.colombia,
     ...timestamps,
   },
@@ -24,7 +25,7 @@ export const employees = [
     id: ids.employee.lucas,
     name: "Lucas Almeida",
     email: "lucas.almeida@employee.test",
-    password: MOCK_PASSWORD_HASH,
+    password: EMPLOYEE_DEV_PASSWORD_HASH,
     intermediano_company_id: ids.intermedianoCompany.brasil,
     ...timestamps,
   },
@@ -125,3 +126,51 @@ export const employeeFiles = [
     ...timestamps,
   },
 ] satisfies Prisma.employee_filesCreateManyInput[]
+
+// Hours on weekdays only, stored the way legacy's employee portal saves them.
+function weekdayHours(year: number, month: number, hoursPerDay: number) {
+  const days = Array.from({ length: daysInMonth(year, month) }, (_, index) => {
+    const weekday = new Date(Date.UTC(year, month - 1, index + 1)).getUTCDay()
+    return weekday === 0 || weekday === 6 ? 0 : hoursPerDay
+  })
+  return { year, month, days: toStoredDays(days), total_hours: sumHours(days) }
+}
+
+export const monthlyTimesheets = [
+  {
+    id: ids.monthlyTimesheet.juanAugust,
+    employee_id: ids.employee.juan,
+    company_id: ids.company.acmeLogistics,
+    ...weekdayHours(2026, 8, 8),
+    status: "approved",
+    comment: "Thanks, all good.",
+    ...timestamps,
+  },
+  {
+    id: ids.monthlyTimesheet.juanSeptember,
+    employee_id: ids.employee.juan,
+    company_id: ids.company.acmeLogistics,
+    ...weekdayHours(2026, 9, 7.5),
+    status: "rejected",
+    comment: "Please double-check the hours for the last week and resubmit.",
+    ...timestamps,
+  },
+  {
+    id: ids.monthlyTimesheet.juanOctober,
+    employee_id: ids.employee.juan,
+    company_id: ids.company.acmeLogistics,
+    ...weekdayHours(2026, 10, 8),
+    status: "pending",
+    comment: null,
+    ...timestamps,
+  },
+  {
+    id: ids.monthlyTimesheet.lucasSeptember,
+    employee_id: ids.employee.lucas,
+    company_id: ids.company.northwindSoftware,
+    ...weekdayHours(2026, 9, 6),
+    status: "pending",
+    comment: null,
+    ...timestamps,
+  },
+] satisfies Prisma.monthly_timesheetsCreateManyInput[]

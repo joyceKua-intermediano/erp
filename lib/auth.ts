@@ -10,7 +10,8 @@ import { env, isGoogleEnabled } from "./env"
 import { hasPermission, type PermissionName } from "./permissions"
 import { prisma } from "./prisma"
 
-const ACCESS_REFRESH_MS = 5 * 60 * 1000
+// How long a role or permission change can take to reach a signed-in session.
+const ACCESS_REFRESH_MS = 60 * 1000
 
 function resolveEmail(user: User | undefined, profile: Profile | undefined) {
   const preferredUsername = typeof profile?.preferred_username === "string" ? profile.preferred_username : null

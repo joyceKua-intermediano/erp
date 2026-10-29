@@ -20,6 +20,7 @@ import {
   intermedianoCompanies,
   investments,
   leads,
+  monthlyTimesheets,
   partners,
   paymentProvisions,
   payrollCosts,
@@ -207,6 +208,9 @@ async function main() {
         )
         await seedStep("supplementary_contract_details", supplementaryContractDetails, (row) =>
           tx.supplementary_contract_details.upsert({ where: { id: row.id }, create: row, update: row }),
+        )
+        await seedStep("monthly_timesheets", monthlyTimesheets, (row) =>
+          tx.monthly_timesheets.upsert({ where: { id: row.id }, create: row, update: row }),
         )
         await seedStep("investments", investments, (row) =>
           tx.investments.upsert({ where: { id: row.id }, create: row, update: row }),

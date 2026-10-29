@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import {
   Building2Icon,
   BuildingIcon,
+  CalendarClockIcon,
   CoinsIcon,
   FileCodeIcon,
   FileSignatureIcon,
@@ -15,6 +16,7 @@ import {
   UserSearchIcon,
   UsersIcon,
 } from "lucide-react"
+import { AppLogo } from "@/components/brand/app-logo"
 import {
   Sidebar,
   SidebarContent,
@@ -39,11 +41,12 @@ const overviewItems: GatedNavItem[] = [
   { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboardIcon },
 ]
 
-// Only modules with a page in the new app are listed; add Timesheets and Expenses here once they're built.
+// Only modules with a page in the new app are listed; add Expenses here once it's built.
 const clusterItems: ClusterNavItem[] = [
   { title: "Quotations", href: "/admin/quotations", icon: FileTextIcon, permission: "quotations.view", module: "quotations" },
   { title: "Employees", href: "/admin/employees", icon: UsersIcon, permission: "employees.view", module: "employees" },
   { title: "Contracts", href: "/admin/contracts", icon: FileSignatureIcon, permission: "contracts.view", module: "contracts" },
+  { title: "Timesheets", href: "/admin/timesheets", icon: CalendarClockIcon, permission: "timesheets.view", module: "timesheets" },
   { title: "Payroll", href: "/admin/payroll", icon: CoinsIcon, permission: "payroll.view", module: "payroll" },
 ]
 
@@ -117,9 +120,7 @@ export function AdminSidebar({ permissions }: { permissions: readonly string[] }
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link href="/admin/dashboard" />}>
-              <span className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
-                I
-              </span>
+              <AppLogo />
               <span className="flex flex-col leading-tight">
                 <span className="text-sm font-semibold">Intermediano</span>
                 <span className="text-xs text-muted-foreground">Admin console</span>

@@ -1,4 +1,4 @@
-import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { keepPreviousData, skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   archiveEmployee,
   createEmployee,
@@ -9,7 +9,7 @@ import {
 } from "@/app/actions/employees"
 import { unwrapActionResult } from "@/lib/action-result"
 import type { ClusterId } from "@/lib/clusters"
-import type { EmployeeFormInput } from "@/lib/employees"
+import type { EmployeeFormInput, EmployeeListQuery } from "@/lib/employees"
 import { useUiStore } from "@/store/use-ui-store"
 import { clusterQueryKeys } from "./use-clusters"
 
@@ -19,12 +19,13 @@ export const employeeQueryKeys = {
   consultants: (clusterId: ClusterId | null) => ["cluster", clusterId, "consultants"] as const,
 }
 
-export function useEmployees() {
+export function useEmployees(query: EmployeeListQuery) {
   const activeCluster = useUiStore((state) => state.activeCluster)
 
   return useQuery({
-    queryKey: employeeQueryKeys.cluster(activeCluster),
-    queryFn: activeCluster ? () => getClusterEmployees(activeCluster) : skipToken,
+    queryKey: [...employeeQueryKeys.cluster(activeCluster), "list", query] as const,
+    queryFn: activeCluster ? () => getClusterEmployees(activeCluster, query) : skipToken,
+    placeholderData: keepPreviousData,
   })
 }
 

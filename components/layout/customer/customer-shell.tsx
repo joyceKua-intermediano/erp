@@ -12,6 +12,7 @@ import {
   WalletIcon,
 } from "lucide-react"
 import { cn } from "cn"
+import { AppLogo } from "@/components/brand/app-logo"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { MobileNavSheet } from "@/components/layout/mobile-nav-sheet"
@@ -41,9 +42,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
             className="lg:hidden"
           />
           <Link href="/customer/dashboard" className="flex items-center gap-2.5">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
-              I
-            </span>
+            <AppLogo />
             <span className="text-sm font-semibold tracking-tight">Intermediano</span>
             <Badge variant="secondary" className="hidden sm:inline-flex">
               Client portal

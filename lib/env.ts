@@ -15,6 +15,12 @@ const envSchema = z.object({
   AUTH_MICROSOFT_ENTRA_ID_ISSUER: z.url({ error: "must be the tenant issuer URL" }),
   AUTH_GOOGLE_ID: z.string().optional(),
   AUTH_GOOGLE_SECRET: z.string().optional(),
+  // A separate, multi-tenant Entra app registration for the employee portal; the admin one stays tenant-only.
+  AUTH_EMPLOYEE_MICROSOFT_ENTRA_ID_ID: z.string().optional(),
+  AUTH_EMPLOYEE_MICROSOFT_ENTRA_ID_SECRET: z.string().optional(),
+  AUTH_EMPLOYEE_MICROSOFT_ENTRA_ID_ISSUER: z
+    .url({ error: "must be an issuer URL" })
+    .default("https://login.microsoftonline.com/common/v2.0"),
 })
 
 export type Env = Readonly<z.infer<typeof envSchema>>
@@ -54,3 +60,7 @@ function loadEnv(): Env {
 export const env: Env = loadEnv()
 
 export const isGoogleEnabled = Boolean(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET)
+
+export const isEmployeeMicrosoftEnabled = Boolean(
+  env.AUTH_EMPLOYEE_MICROSOFT_ENTRA_ID_ID && env.AUTH_EMPLOYEE_MICROSOFT_ENTRA_ID_SECRET
+)
