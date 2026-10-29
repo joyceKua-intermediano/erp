@@ -30,6 +30,8 @@ export type BreakdownLine = {
   label: string
   amount: number
   isTotal?: boolean
+  // Stable id that survives label renames; provision lines carry their provision type name.
+  key?: string
 }
 
 export type BreakdownSection = {

@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { listSearchSchema, pageNumberSchema } from "./pagination"
 
 export const contractStatuses = ["active", "pending_signature", "upcoming", "ended", "none"] as const
 
@@ -15,6 +16,22 @@ export type ClusterEmployee = {
   contractEnd: string | null
   contractStatus: ContractStatus
 }
+
+export type ClusterEmployees = {
+  // One page of employees matching the query.
+  employees: ClusterEmployee[]
+  // How many employees match the query across all pages.
+  total: number
+  // Figures for the whole cluster, ignoring the query; statuses come from each employee's latest contract.
+  stats: { employees: number; active: number; pendingSignature: number }
+}
+
+export const employeeListQuerySchema = z.object({
+  page: pageNumberSchema,
+  search: listSearchSchema,
+})
+
+export type EmployeeListQuery = z.output<typeof employeeListQuerySchema>
 
 export const contractStatusLabels: Record<ContractStatus, string> = {
   active: "Active",

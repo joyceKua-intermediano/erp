@@ -1,0 +1,1334 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`'brasil' calculator > keeps its current figures 1`] = `
+{
+  "sections": [
+    {
+      "lines": [
+        {
+          "amount": 10000,
+          "label": "Gross Salary",
+        },
+        {
+          "amount": 10800,
+          "isTotal": true,
+          "label": "Total Gross Monthly Salary",
+        },
+        {
+          "amount": 5241.021199999999,
+          "label": "Payroll Costs",
+        },
+        {
+          "amount": 3000.23892,
+          "label": "Provisions",
+        },
+        {
+          "amount": 19041.26012,
+          "isTotal": true,
+          "label": "Gross Salary + Payroll Cost & Provisions",
+        },
+        {
+          "amount": 1904.126012,
+          "label": "Fee",
+        },
+        {
+          "amount": 25,
+          "label": "Bank Fee",
+        },
+        {
+          "amount": 20970.386132,
+          "isTotal": true,
+          "label": "Total Partial",
+        },
+        {
+          "amount": 1455.7043361740002,
+          "label": "Services taxes",
+        },
+        {
+          "amount": 22426.090468174,
+          "isTotal": true,
+          "label": "Gross Payroll, PR Costs, Fees & Taxes",
+        },
+      ],
+      "title": "Summary",
+    },
+    {
+      "lines": [
+        {
+          "amount": 3002.4,
+          "label": "INSS",
+        },
+        {
+          "amount": 864,
+          "label": "FGTS",
+        },
+        {
+          "amount": 432,
+          "label": "FGTS Fine",
+        },
+        {
+          "amount": 772.6212,
+          "label": "FGTS & INSS over Vacation and 13th Salary",
+        },
+        {
+          "amount": 80,
+          "label": "Medical Plan & Life Insurance",
+        },
+        {
+          "amount": 40,
+          "label": "Meal Tickets",
+        },
+        {
+          "amount": 30,
+          "label": "Transportation Tickets",
+        },
+        {
+          "amount": 20,
+          "label": "Operational Costs",
+        },
+        {
+          "amount": 5241.021199999999,
+          "isTotal": true,
+          "label": "Total Payroll Costs",
+        },
+      ],
+      "title": "Payroll Costs",
+    },
+    {
+      "lines": [
+        {
+          "amount": 899.99964,
+          "label": "13th Salary",
+        },
+        {
+          "amount": 899.99964,
+          "label": "Vacation",
+        },
+        {
+          "amount": 300.24,
+          "label": "1/3 Vacation Bonus",
+        },
+        {
+          "amount": 899.99964,
+          "label": "Termination",
+        },
+        {
+          "amount": 3000.23892,
+          "isTotal": true,
+          "label": "Total Provisions",
+        },
+      ],
+      "title": "Provisions",
+    },
+  ],
+  "totalInvoice": 22426.090468174,
+  "variant": "Ordinary",
+}
+`;
+
+exports[`'canada quebec' calculator > keeps its current figures 1`] = `
+{
+  "sections": [
+    {
+      "lines": [
+        {
+          "amount": 10000,
+          "label": "Gross Salary",
+        },
+        {
+          "amount": 10800,
+          "isTotal": true,
+          "label": "Gross Monthly Salary",
+        },
+        {
+          "amount": 1122.876,
+          "label": "Payroll Costs",
+        },
+        {
+          "amount": 1124.28,
+          "label": "Provisions",
+        },
+        {
+          "amount": 13047.156,
+          "isTotal": true,
+          "label": "Gross Payroll, PR Costs & Provisions",
+        },
+        {
+          "amount": 1304.7156000000002,
+          "label": "Fee",
+        },
+        {
+          "amount": 25,
+          "label": "Bank Fee",
+        },
+        {
+          "amount": 14351.8716,
+          "isTotal": true,
+          "label": "Gross Payroll, PR Costs & Fees",
+        },
+        {
+          "amount": 14376.8716,
+          "isTotal": true,
+          "label": "Gross Payroll, PR Costs, Fees & Taxes",
+        },
+      ],
+      "title": "Summary",
+    },
+    {
+      "lines": [
+        {
+          "amount": 644.328,
+          "label": "QPP",
+        },
+        {
+          "amount": 178.092,
+          "label": "Employment Insurance",
+        },
+        {
+          "amount": 65.016,
+          "label": "QPIP",
+        },
+        {
+          "amount": 178.20000000000002,
+          "label": "HSF",
+        },
+        {
+          "amount": 6.4799999999999995,
+          "label": "CNT",
+        },
+        {
+          "amount": 50.760000000000005,
+          "label": "CNESST",
+        },
+        {
+          "amount": 1122.876,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Payroll Costs",
+    },
+    {
+      "lines": [
+        {
+          "amount": 449.28,
+          "label": "Vacations",
+        },
+        {
+          "amount": 675,
+          "label": "Indemnification",
+        },
+        {
+          "amount": 1124.28,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Provisions",
+    },
+  ],
+  "totalInvoice": 14376.8716,
+  "variant": "Quebec",
+}
+`;
+
+exports[`'canada' calculator > keeps its current figures 1`] = `
+{
+  "sections": [
+    {
+      "lines": [
+        {
+          "amount": 10000,
+          "label": "Gross Salary",
+        },
+        {
+          "amount": 10800,
+          "isTotal": true,
+          "label": "Gross Monthly Salary",
+        },
+        {
+          "amount": 784.975,
+          "label": "Payroll Costs",
+        },
+        {
+          "amount": 1124.28,
+          "label": "Provisions",
+        },
+        {
+          "amount": 12709.255000000001,
+          "isTotal": true,
+          "label": "Gross Payroll & PR Costs",
+        },
+        {
+          "amount": 1270.9255000000003,
+          "label": "Fee",
+        },
+        {
+          "amount": 25,
+          "label": "Bank Fee",
+        },
+        {
+          "amount": 13980.180500000002,
+          "isTotal": true,
+          "label": "Gross Payroll, PR Costs & Fees",
+        },
+        {
+          "amount": 14005.180500000002,
+          "isTotal": true,
+          "label": "Gross Payroll, PR Costs, Fees & Taxes",
+        },
+      ],
+      "title": "Summary",
+    },
+    {
+      "lines": [
+        {
+          "amount": 336.175,
+          "label": "Canada Pension Plan",
+        },
+        {
+          "amount": 248.4,
+          "label": "Employment Insurance",
+        },
+        {
+          "amount": 210.6,
+          "label": "Employer Health Tax or EHT",
+        },
+        {
+          "amount": 167.4,
+          "label": "Workers Compensation",
+        },
+        {
+          "amount": 108,
+          "label": "GL Insurance",
+        },
+        {
+          "amount": 784.975,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Payroll Costs",
+    },
+    {
+      "lines": [
+        {
+          "amount": 449.28,
+          "label": "Vacations",
+        },
+        {
+          "amount": 675,
+          "label": "Indemnification",
+        },
+        {
+          "amount": 1124.28,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Provisions",
+    },
+  ],
+  "totalInvoice": 14005.180500000002,
+  "variant": "Canada",
+}
+`;
+
+exports[`'chile' calculator > keeps its current figures 1`] = `
+{
+  "sections": [
+    {
+      "lines": [
+        {
+          "amount": 10000,
+          "label": "Gross Salary",
+        },
+        {
+          "amount": 10800,
+          "isTotal": true,
+          "label": "Total Gross Income",
+        },
+        {
+          "amount": 943.9200000000001,
+          "label": "Payroll Costs",
+        },
+        {
+          "amount": 2429.2763999999997,
+          "label": "Provisions",
+        },
+        {
+          "amount": 14173.196399999999,
+          "isTotal": true,
+          "label": "Subtotal Gross Salary + Payroll Costs",
+        },
+        {
+          "amount": 1080,
+          "label": "Fee",
+        },
+        {
+          "amount": 25,
+          "label": "Bank Fee",
+        },
+        {
+          "amount": 15278.196399999999,
+          "isTotal": true,
+          "label": "Total Cost + WTAX",
+        },
+        {
+          "amount": 2902.8573159999996,
+          "label": "VAT 19%",
+        },
+        {
+          "amount": 18181.053716,
+          "isTotal": true,
+          "label": "Total Invoice",
+        },
+      ],
+      "title": "Summary",
+    },
+    {
+      "lines": [
+        {
+          "amount": 405,
+          "label": "Employer contribution",
+        },
+        {
+          "amount": 324,
+          "label": "Unemployment Insurance",
+        },
+        {
+          "amount": 214.92000000000002,
+          "label": "Disability Insurance",
+        },
+        {
+          "amount": 0,
+          "label": "Insurance",
+        },
+        {
+          "amount": 943.9200000000001,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Payroll Costs",
+    },
+    {
+      "lines": [
+        {
+          "amount": 629.9964,
+          "label": "Vacations",
+        },
+        {
+          "amount": 899.64,
+          "label": "Compensation for years of service",
+        },
+        {
+          "amount": 899.64,
+          "label": "Notice period",
+        },
+        {
+          "amount": 2429.2763999999997,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Provisions",
+    },
+  ],
+  "totalInvoice": 18181.053716,
+  "variant": "Ordinary",
+}
+`;
+
+exports[`'colombia integral' calculator > keeps its current figures 1`] = `
+{
+  "sections": [
+    {
+      "lines": [
+        {
+          "amount": 10000,
+          "label": "Gross Salary",
+        },
+        {
+          "amount": 10800,
+          "isTotal": true,
+          "label": "Total Gross Income",
+        },
+        {
+          "amount": 2651.09,
+          "label": "Payroll Costs",
+        },
+        {
+          "amount": 1025.85,
+          "label": "Provisions",
+        },
+        {
+          "amount": 14476.94,
+          "isTotal": true,
+          "label": "Subtotal Gross Salary + Payroll Costs",
+        },
+        {
+          "amount": 1080,
+          "label": "Fee",
+        },
+        {
+          "amount": 25,
+          "label": "Bank Fee",
+        },
+        {
+          "amount": 15581.94,
+          "isTotal": true,
+          "label": "Subtotal",
+        },
+        {
+          "amount": 155.8194,
+          "label": "Municipal tax - ICA 1%",
+        },
+        {
+          "amount": 2990.1742860000004,
+          "label": "Service taxes - VAT 19%",
+        },
+        {
+          "amount": 18727.933686,
+          "isTotal": true,
+          "label": "Total Invoice",
+        },
+      ],
+      "title": "Summary",
+    },
+    {
+      "lines": [
+        {
+          "amount": 881.9999999999999,
+          "label": "Pension Fund",
+        },
+        {
+          "amount": 624.75,
+          "label": "Health Fund",
+        },
+        {
+          "amount": 315,
+          "label": "ICBF Contribution",
+        },
+        {
+          "amount": 210,
+          "label": "Sena Contribution",
+        },
+        {
+          "amount": 179.33999999999997,
+          "label": "ARL Contribution",
+        },
+        {
+          "amount": 420,
+          "label": "Compensation Fund Contribution",
+        },
+        {
+          "amount": 20,
+          "label": "Operational Costs",
+        },
+        {
+          "amount": 2651.09,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Payroll Costs",
+    },
+    {
+      "lines": [
+        {
+          "amount": 437.85,
+          "label": "Vacation",
+        },
+        {
+          "amount": 588,
+          "label": "Indemnization",
+        },
+        {
+          "amount": 1025.85,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Provisions",
+    },
+  ],
+  "totalInvoice": 18727.933686,
+  "variant": "Integral",
+}
+`;
+
+exports[`'colombia' calculator > keeps its current figures 1`] = `
+{
+  "sections": [
+    {
+      "lines": [
+        {
+          "amount": 10000,
+          "label": "Gross Salary",
+        },
+        {
+          "amount": 10800,
+          "isTotal": true,
+          "label": "Total Gross Income",
+        },
+        {
+          "amount": 3373.7,
+          "label": "Payroll Costs",
+        },
+        {
+          "amount": 2962.3968000000004,
+          "label": "Provisions",
+        },
+        {
+          "amount": 17136.0968,
+          "isTotal": true,
+          "label": "Subtotal Gross Salary + Payroll Costs",
+        },
+        {
+          "amount": 1080,
+          "label": "Fee",
+        },
+        {
+          "amount": 25,
+          "label": "Bank Fee",
+        },
+        {
+          "amount": 18241.0968,
+          "isTotal": true,
+          "label": "Subtotal",
+        },
+        {
+          "amount": 182.410968,
+          "label": "Municipal tax - ICA 1%",
+        },
+        {
+          "amount": 3500.46647592,
+          "label": "Service taxes - VAT 19%",
+        },
+        {
+          "amount": 21923.974243919998,
+          "isTotal": true,
+          "label": "Total Invoice",
+        },
+      ],
+      "title": "Summary",
+    },
+    {
+      "lines": [
+        {
+          "amount": 1260,
+          "label": "Pension Fund",
+        },
+        {
+          "amount": 892.5000000000001,
+          "label": "Health Fund",
+        },
+        {
+          "amount": 315,
+          "label": "ICBF Contribution",
+        },
+        {
+          "amount": 210,
+          "label": "Sena Contribution",
+        },
+        {
+          "amount": 256.2,
+          "label": "ARL Contribution",
+        },
+        {
+          "amount": 420,
+          "label": "Compensation Fund Contribution",
+        },
+        {
+          "amount": 20,
+          "label": "Operational Costs",
+        },
+        {
+          "amount": 3373.7,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Payroll Costs",
+    },
+    {
+      "lines": [
+        {
+          "amount": 899.64,
+          "label": "Cesantias",
+        },
+        {
+          "amount": 107.9568,
+          "label": "Interests over Cesantias",
+        },
+        {
+          "amount": 899.64,
+          "label": "Prima",
+        },
+        {
+          "amount": 450.36,
+          "label": "Vacation",
+        },
+        {
+          "amount": 604.8000000000001,
+          "label": "Indemnization",
+        },
+        {
+          "amount": 2962.3968000000004,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Provisions",
+    },
+  ],
+  "totalInvoice": 21923.974243919998,
+  "variant": "Ordinary",
+}
+`;
+
+exports[`'costa-rica' calculator > keeps its current figures 1`] = `
+{
+  "sections": [
+    {
+      "lines": [
+        {
+          "amount": 10000,
+          "label": "Gross Salary",
+        },
+        {
+          "amount": 10800,
+          "isTotal": true,
+          "label": "Total Gross Income",
+        },
+        {
+          "amount": 11677.725,
+          "label": "Payroll Costs",
+        },
+        {
+          "amount": 2825.28,
+          "label": "Provisions",
+        },
+        {
+          "amount": 25303.005,
+          "isTotal": true,
+          "label": "Subtotal Gross Salary + Payroll Costs",
+        },
+        {
+          "amount": 2530.3005000000003,
+          "label": "Fee",
+        },
+        {
+          "amount": 25,
+          "label": "Bank Fee",
+        },
+        {
+          "amount": 27858.305500000002,
+          "isTotal": true,
+          "label": "Subtotal",
+        },
+        {
+          "amount": 3621.5797150000003,
+          "label": "Service taxes - VAT 13%",
+        },
+        {
+          "amount": 31479.885215000002,
+          "isTotal": true,
+          "label": "Total Invoice",
+        },
+      ],
+      "title": "Summary",
+    },
+    {
+      "lines": [
+        {
+          "amount": 2867.025,
+          "label": "Employer taxes",
+        },
+        {
+          "amount": 210.7,
+          "label": "INS Policy",
+        },
+        {
+          "amount": 8600,
+          "label": "Medical Insurance",
+        },
+        {
+          "amount": 11677.725,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Payroll Costs",
+    },
+    {
+      "lines": [
+        {
+          "amount": 575.64,
+          "label": "Unemployment",
+        },
+        {
+          "amount": 899.64,
+          "label": "Forewarning",
+        },
+        {
+          "amount": 899.64,
+          "label": "Bonus",
+        },
+        {
+          "amount": 450.36,
+          "label": "Vacations",
+        },
+        {
+          "amount": 2825.28,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Provisions",
+    },
+  ],
+  "totalInvoice": 31479.885215000002,
+  "variant": "Ordinary",
+}
+`;
+
+exports[`'ecuador' calculator > keeps its current figures 1`] = `
+{
+  "sections": [
+    {
+      "lines": [
+        {
+          "amount": 10000,
+          "label": "Gross Salary",
+        },
+        {
+          "amount": 10800,
+          "isTotal": true,
+          "label": "Total Gross Income",
+        },
+        {
+          "amount": 1312.2,
+          "label": "Payroll Costs",
+        },
+        {
+          "amount": 5214.0931,
+          "label": "Provisions",
+        },
+        {
+          "amount": 17326.2931,
+          "isTotal": true,
+          "label": "Subtotal Gross Salary + Payroll Costs",
+        },
+        {
+          "amount": 1732.62931,
+          "label": "Fee",
+        },
+        {
+          "amount": 25,
+          "label": "Bank Fee",
+        },
+        {
+          "amount": 19083.92241,
+          "isTotal": true,
+          "label": "Total Invoice",
+        },
+      ],
+      "title": "Summary",
+    },
+    {
+      "lines": [
+        {
+          "amount": 1204.2,
+          "label": "I.E.S.S. Instituto Ecuatoriano de Seguridad Social",
+        },
+        {
+          "amount": 54,
+          "label": "SECAP Ecuadorian Training Service",
+        },
+        {
+          "amount": 1312.2,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Payroll Costs",
+    },
+    {
+      "lines": [
+        {
+          "amount": 450.36,
+          "label": "Vacation",
+        },
+        {
+          "amount": 899.964,
+          "label": "Reserve Fund",
+        },
+        {
+          "amount": 899.964,
+          "label": "Bonus 13th",
+        },
+        {
+          "amount": 39.1651,
+          "label": "Bonus 14th",
+        },
+        {
+          "amount": 224.64,
+          "label": "25% Bonification",
+        },
+        {
+          "amount": 2700,
+          "label": "Compensation",
+        },
+        {
+          "amount": 5214.0931,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Provisions",
+    },
+  ],
+  "totalInvoice": 19083.92241,
+  "variant": "Ordinary",
+}
+`;
+
+exports[`'hongkong' calculator > keeps its current figures 1`] = `
+{
+  "sections": [
+    {
+      "lines": [
+        {
+          "amount": 10000,
+          "label": "Gross Salary",
+        },
+        {
+          "amount": 10800,
+          "isTotal": true,
+          "label": "Total Gross Monthly Salary",
+        },
+        {
+          "amount": 540,
+          "label": "Payroll Costs",
+        },
+        {
+          "amount": 67.5,
+          "label": "Provisions",
+        },
+        {
+          "amount": 25,
+          "label": "Bank Fee",
+        },
+        {
+          "amount": 11365,
+          "isTotal": true,
+          "label": "Total Before Service Fee",
+        },
+        {
+          "amount": 1136.5,
+          "label": "Fee",
+        },
+        {
+          "amount": 12501.5,
+          "isTotal": true,
+          "label": "Total Costs",
+        },
+      ],
+      "title": "Summary",
+    },
+    {
+      "lines": [
+        {
+          "amount": 540,
+          "label": "Employer MPF",
+        },
+        {
+          "amount": 0,
+          "label": "Employer Compensation Insurance",
+        },
+        {
+          "amount": 540,
+          "isTotal": true,
+          "label": "Total Payroll Costs",
+        },
+      ],
+      "title": "Payroll Costs",
+    },
+    {
+      "lines": [
+        {
+          "amount": 67.5,
+          "label": "Leave Encashment",
+        },
+        {
+          "amount": 67.5,
+          "isTotal": true,
+          "label": "Total Provisions",
+        },
+      ],
+      "title": "Provisions",
+    },
+  ],
+  "totalInvoice": 12501.5,
+  "variant": "Ordinary",
+}
+`;
+
+exports[`'mexico' calculator > keeps its current figures 1`] = `
+{
+  "sections": [
+    {
+      "lines": [
+        {
+          "amount": 10000,
+          "label": "Gross Salary",
+        },
+        {
+          "amount": 10600,
+          "isTotal": true,
+          "label": "Total Gross Monthly Salary",
+        },
+        {
+          "amount": 200,
+          "label": "Other cost (exempt of Income tax)",
+        },
+        {
+          "amount": 3369.5173999999997,
+          "label": "Payroll Costs",
+        },
+        {
+          "amount": 2361.6443098,
+          "label": "Provisions",
+        },
+        {
+          "amount": 16531.1617098,
+          "isTotal": true,
+          "label": "Subtotal Gross Salary + Payroll Costs",
+        },
+        {
+          "amount": 1653.1161709799999,
+          "label": "Fee",
+        },
+        {
+          "amount": 25,
+          "label": "Bank Fee",
+        },
+        {
+          "amount": 18209.27788078,
+          "isTotal": true,
+          "label": "Subtotal",
+        },
+        {
+          "amount": 2913.4844609248,
+          "label": "VAT 16%",
+        },
+        {
+          "amount": 21122.762341704798,
+          "isTotal": true,
+          "label": "Total Invoice",
+        },
+      ],
+      "title": "Summary",
+    },
+    {
+      "lines": [
+        {
+          "amount": 424,
+          "label": "Payroll Tax 4%",
+        },
+        {
+          "amount": 804.4074999999999,
+          "label": "Work Risk",
+        },
+        {
+          "amount": 267.12,
+          "label": "Fix Contribution",
+        },
+        {
+          "amount": 74.2,
+          "label": "Cash Benefits",
+        },
+        {
+          "amount": 185.50000000000003,
+          "label": "Disability and Life Insurance",
+        },
+        {
+          "amount": 106,
+          "label": "Kindergarten",
+        },
+        {
+          "amount": 111.30000000000001,
+          "label": "Pensions and Beneficiaries",
+        },
+        {
+          "amount": 212,
+          "label": "Retirement",
+        },
+        {
+          "amount": 654.9899,
+          "label": "Old Age Unemployment",
+        },
+        {
+          "amount": 530,
+          "label": "Infonavit",
+        },
+        {
+          "amount": 3369.5173999999997,
+          "isTotal": true,
+          "label": "Total Payroll Costs",
+        },
+      ],
+      "title": "Payroll Costs",
+    },
+    {
+      "lines": [
+        {
+          "amount": 442.02,
+          "label": "13th Salary",
+        },
+        {
+          "amount": 88.3333298,
+          "label": "Vacation Prime",
+        },
+        {
+          "amount": 353.33298,
+          "label": "Vacation",
+        },
+        {
+          "amount": 883.298,
+          "label": "Indemnization 90 days",
+        },
+        {
+          "amount": 594.66,
+          "label": "Indemnization 20 days",
+        },
+        {
+          "amount": 0,
+          "label": "PTU",
+        },
+        {
+          "amount": 2361.6443098,
+          "isTotal": true,
+          "label": "Total Provisions",
+        },
+      ],
+      "title": "Provisions",
+    },
+  ],
+  "totalInvoice": 21122.762341704798,
+  "variant": "Ordinary",
+}
+`;
+
+exports[`'peru' calculator > keeps its current figures 1`] = `
+{
+  "sections": [
+    {
+      "lines": [
+        {
+          "amount": 10000,
+          "label": "Gross Salary",
+        },
+        {
+          "amount": 10800,
+          "isTotal": true,
+          "label": "Total Gross Income",
+        },
+        {
+          "amount": 1083.084,
+          "label": "Payroll Costs",
+        },
+        {
+          "amount": 5414.04,
+          "label": "Provisions",
+        },
+        {
+          "amount": 17297.124,
+          "isTotal": true,
+          "label": "Subtotal Gross Salary + Payroll Costs",
+        },
+        {
+          "amount": 1729.7124000000001,
+          "label": "Fee",
+        },
+        {
+          "amount": 25,
+          "label": "Bank Fee",
+        },
+        {
+          "amount": 19051.8364,
+          "isTotal": true,
+          "label": "Subtotal",
+        },
+        {
+          "amount": 3429.330552,
+          "label": "Service taxes - VAT 18%",
+        },
+        {
+          "amount": 22481.166952,
+          "isTotal": true,
+          "label": "Total Invoice",
+        },
+      ],
+      "title": "Summary",
+    },
+    {
+      "lines": [
+        {
+          "amount": 967.5,
+          "label": "Health Insurance - Essalud",
+        },
+        {
+          "amount": 80.625,
+          "label": "Health Insurance - Essalud - Vacations",
+        },
+        {
+          "amount": 0,
+          "label": "EPS",
+        },
+        {
+          "amount": 34.959,
+          "label": "Seguro Vida Ley",
+        },
+        {
+          "amount": 1083.084,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Payroll Costs",
+    },
+    {
+      "lines": [
+        {
+          "amount": 1800.36,
+          "label": "Gratification",
+        },
+        {
+          "amount": 162,
+          "label": "Extraordinary Gratification",
+        },
+        {
+          "amount": 1050.84,
+          "label": "Vacations",
+        },
+        {
+          "amount": 1050.84,
+          "label": "CTS",
+        },
+        {
+          "amount": 1350,
+          "label": "Termination - Indemnification",
+        },
+        {
+          "amount": 5414.04,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Provisions",
+    },
+  ],
+  "totalInvoice": 22481.166952,
+  "variant": "Ordinary",
+}
+`;
+
+exports[`'uruguay' calculator > keeps its current figures 1`] = `
+{
+  "sections": [
+    {
+      "lines": [
+        {
+          "amount": 10000,
+          "label": "Gross Salary",
+        },
+        {
+          "amount": 10800,
+          "isTotal": true,
+          "label": "Gross Monthly Salary",
+        },
+        {
+          "amount": 2317.7054755957633,
+          "label": "Payroll Costs",
+        },
+        {
+          "amount": 3307.07345984113,
+          "label": "Provisions",
+        },
+        {
+          "amount": 16424.778935436894,
+          "isTotal": true,
+          "label": "Subtotal Gross Salary + Payroll Costs",
+        },
+        {
+          "amount": 1080,
+          "label": "Fee",
+        },
+        {
+          "amount": 3851.051365796117,
+          "label": "VAT 22%",
+        },
+        {
+          "amount": 25,
+          "label": "Bank Fee",
+        },
+        {
+          "amount": 21380.83030123301,
+          "isTotal": true,
+          "label": "Total Invoice",
+        },
+      ],
+      "title": "Summary",
+    },
+    {
+      "lines": [
+        {
+          "amount": 2267.7054755957633,
+          "label": "Social Security",
+        },
+        {
+          "amount": 50,
+          "label": "Operational Costs",
+        },
+        {
+          "amount": 2317.7054755957633,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Payroll Costs",
+    },
+    {
+      "lines": [
+        {
+          "amount": 952.5755692850838,
+          "label": "13th Salary",
+        },
+        {
+          "amount": 634.6691968225948,
+          "label": "License",
+        },
+        {
+          "amount": 634.6691968225948,
+          "label": "Vacational Salary",
+        },
+        {
+          "amount": 1085.1594969108562,
+          "label": "Dismissal",
+        },
+        {
+          "amount": 3307.07345984113,
+          "isTotal": true,
+          "label": "Total",
+        },
+      ],
+      "title": "Provisions",
+    },
+  ],
+  "totalInvoice": 21380.83030123301,
+  "variant": "Ordinary",
+}
+`;

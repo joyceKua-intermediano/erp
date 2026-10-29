@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CircleAlertIcon } from "lucide-react";
 import { Suspense } from "react";
 import { AuthCard } from "@/components/auth/auth-card";
+import { ClientStateReset } from "@/components/auth/client-state-reset";
 import { LoginButtons } from "@/components/auth/login-buttons";
 import { isGoogleEnabled } from "@/lib/env";
 
@@ -47,6 +48,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
       description="Use your work account to access the admin console."
       footer="Only registered Intermediano users can sign in."
     >
+      <ClientStateReset />
       <Suspense fallback={<LoginButtons callbackUrl={DEFAULT_CALLBACK_URL} googleEnabled={isGoogleEnabled} />}>
         <LoginForm searchParams={searchParams} />
       </Suspense>

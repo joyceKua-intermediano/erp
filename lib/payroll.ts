@@ -1,6 +1,8 @@
 import { z } from "zod"
 import { normalizeSalary } from "./contracts"
+import { listSearchSchema, pageNumberSchema } from "./pagination"
 import {
+  quotationDateFromTitle,
   quotationFormSchema,
   toQuotationFormInput,
   type QuotationClusterKind,
@@ -88,6 +90,24 @@ export function provisionTypeNames(kind: QuotationClusterKind) {
   return [...new Set([...types.ordinary, ...(types.integral ?? [])].map(({ name }) => name))]
 }
 
+type PayrollRunOrder = { id: bigint; title: string; created_at: Date | null }
+
+// The payroll date lives in the title, but older rows can hold free text there, so those fall back to when they
+// were created; runs on the same date keep the order they were added in.
+function payrollRunDate(run: PayrollRunOrder) {
+  return quotationDateFromTitle(run.title) ?? run.created_at?.toISOString().slice(0, 10) ?? ""
+}
+
+export function comparePayrollRuns(a: PayrollRunOrder, b: PayrollRunOrder) {
+  const byDate = payrollRunDate(a).localeCompare(payrollRunDate(b))
+  if (byDate !== 0) return byDate
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+}
+
+export function earlierPayrollRuns<T extends PayrollRunOrder>(runs: readonly T[], current: PayrollRunOrder): T[] {
+  return runs.filter((run) => comparePayrollRuns(run, current) < 0).sort(comparePayrollRuns)
+}
+
 export type PayrollListItem = {
   id: string
   title: string
@@ -104,8 +124,27 @@ export type PayrollListItem = {
 
 export type ClusterPayrolls = {
   kind: QuotationClusterKind | null
+  // One page of payroll runs matching the query.
   payrolls: PayrollListItem[]
+  // How many runs match the query across all pages.
+  total: number
+  // Figures for the whole cluster, ignoring the query.
+  stats: { payrolls: number; thisMonth: number; consultants: number }
+  // Filter choices drawn from every run in the cluster.
+  consultants: QuotationOption[]
+  variants: string[]
 }
+
+export const payrollListQuerySchema = z.object({
+  page: pageNumberSchema,
+  search: listSearchSchema,
+  // The start of the payroll date saved in the title, e.g. "2026-10", or "" for any month.
+  month: z.union([z.literal(""), z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/)]).catch(""),
+  consultantId: z.string().regex(/^\d+$/).nullable().catch(null),
+  variant: z.string().trim().min(1).max(50).nullable().catch(null),
+})
+
+export type PayrollListQuery = z.output<typeof payrollListQuerySchema>
 
 export type PaidProvision = {
   provisionTypeId: string

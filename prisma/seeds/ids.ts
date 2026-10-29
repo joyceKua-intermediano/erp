@@ -25,6 +25,7 @@ export const ids = {
   contact: { acmeMain: 1n, northwindMain: 2n },
   lead: { acmeExpansion: 1n },
   employee: { juan: 1n, camila: 2n, lucas: 3n },
+  monthlyTimesheet: { juanAugust: 1n, juanSeptember: 2n, juanOctober: 3n, lucasSeptember: 4n },
   personalInformation: { juan: 1n },
   emergencyContact: { juanSpouse: 1n },
   dependent: { juanChild: 1n },
@@ -43,6 +44,9 @@ export const ids = {
 } as const
 
 export const MOCK_PASSWORD_HASH = "$2y$12$mockmockmockmockmockmuMOCKHASHNOTFORLOGINxxxxxxxxxxxxx"
+
+// Laravel-style bcrypt hash of the local-only password "employee123", so seeded employees can sign in to the portal.
+export const EMPLOYEE_DEV_PASSWORD_HASH = "$2y$12$FR29C8InK9OIyLMsXY7HKuBnZQxHKQo35sY0jRDlrYoW9ap2E0sAO"
 
 export const SEEDED_AT = new Date("2026-01-05T00:00:00Z")
 

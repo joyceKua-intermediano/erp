@@ -30,14 +30,23 @@ import {
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { TablePager } from "@/components/table-pager"
 import { useActiveCluster } from "@/hooks/use-clusters"
 import { useContracts } from "@/hooks/use-contracts"
-import { contractKindLabels, contractKinds, type ClusterContract, type ContractKind } from "@/lib/contracts"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
+import {
+  contractKindLabels,
+  contractKinds,
+  type ClusterContract,
+  type ContractKind,
+  type ContractPeriodFilter,
+} from "@/lib/contracts"
+import { SEARCH_DEBOUNCE_MS } from "@/lib/pagination"
 import { ArchiveContractDialog } from "./archive-contract-dialog"
 import { ContractKindBadge, SignatureBadges } from "./contract-badges"
 import { ContractFormSheet } from "./contract-form-sheet"
 
-type PeriodFilter = "all" | "fixed" | "open"
+type PeriodFilter = ContractPeriodFilter
 
 const periodFilters: { id: PeriodFilter; name: string }[] = [
   { id: "all", name: "Any period" },
@@ -46,20 +55,6 @@ const periodFilters: { id: PeriodFilter; name: string }[] = [
 ]
 
 const CHOOSE_CLUSTER_DESCRIPTION = "Contracts are scoped to one Intermediano legal entity at a time."
-
-function matchesSearch(contract: ClusterContract, query: string) {
-  const needle = query.trim().toLowerCase()
-  if (!needle) return true
-  return [contract.employeeName, contract.jobTitle, contract.counterparty]
-    .filter((value): value is string => Boolean(value))
-    .some((value) => value.toLowerCase().includes(needle))
-}
-
-function matchesPeriod(contract: ClusterContract, period: PeriodFilter) {
-  if (period === "fixed") return contract.endDate !== null
-  if (period === "open") return contract.endDate === null
-  return true
-}
 
 function FilterBadge({ isActive, onClick, children }: { isActive: boolean; onClick: () => void; children: string }) {
   return (
@@ -100,25 +95,29 @@ function ClusterContractsPanel({ clusterLabel, canManage }: { clusterLabel: stri
     open: false,
     contract: null,
   })
-  const { data, isPending, isError, isFetching, refetch } = useContracts()
+  const [page, setPage] = useState(1)
+  const debouncedSearch = useDebouncedValue(search.trim(), SEARCH_DEBOUNCE_MS)
+  const { data, isPending, isError, isFetching, refetch } = useContracts({
+    page,
+    search: debouncedSearch,
+    kind: kindFilter,
+    period: periodFilter,
+  })
 
-  const contracts = data ?? []
-  const visibleContracts = contracts.filter(
-    (contract) =>
-      matchesSearch(contract, search) &&
-      (kindFilter === null || contract.kind === kindFilter) &&
-      matchesPeriod(contract, periodFilter)
-  )
+  const visibleContracts = data?.contracts ?? []
+  const clusterTotal = data?.stats.contracts ?? 0
   const trimmedSearch = search.trim()
 
+  // Any change to the filters starts again from the first page.
+  function updateFilters(apply: () => void) {
+    apply()
+    setPage(1)
+  }
+
   const stats = [
-    { label: "Contracts", value: contracts.length, icon: FileTextIcon },
-    { label: "Active", value: contracts.filter((contract) => contract.status === "active").length, icon: UserCheckIcon },
-    {
-      label: "Pending signature",
-      value: contracts.filter((contract) => contract.status === "pending_signature").length,
-      icon: FileSignatureIcon,
-    },
+    { label: "Contracts", value: clusterTotal, icon: FileTextIcon },
+    { label: "Active", value: data?.stats.active ?? 0, icon: UserCheckIcon },
+    { label: "Pending signature", value: data?.stats.pendingSignature ?? 0, icon: FileSignatureIcon },
   ]
 
   return (
@@ -159,7 +158,7 @@ function ClusterContractsPanel({ clusterLabel, canManage }: { clusterLabel: stri
               <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => updateFilters(() => setSearch(event.target.value))}
                 placeholder="Search employee, position, client…"
                 aria-label="Search contracts"
                 className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
@@ -173,11 +172,15 @@ function ClusterContractsPanel({ clusterLabel, canManage }: { clusterLabel: stri
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
-            <FilterBadge isActive={kindFilter === null} onClick={() => setKindFilter(null)}>
+            <FilterBadge isActive={kindFilter === null} onClick={() => updateFilters(() => setKindFilter(null))}>
               All kinds
             </FilterBadge>
             {contractKinds.map((kind) => (
-              <FilterBadge key={kind} isActive={kindFilter === kind} onClick={() => setKindFilter(kind)}>
+              <FilterBadge
+                key={kind}
+                isActive={kindFilter === kind}
+                onClick={() => updateFilters(() => setKindFilter(kind))}
+              >
                 {contractKindLabels[kind]}
               </FilterBadge>
             ))}
@@ -186,14 +189,14 @@ function ClusterContractsPanel({ clusterLabel, canManage }: { clusterLabel: stri
               <FilterBadge
                 key={filter.id}
                 isActive={periodFilter === filter.id}
-                onClick={() => setPeriodFilter(filter.id)}
+                onClick={() => updateFilters(() => setPeriodFilter(filter.id))}
               >
                 {filter.name}
               </FilterBadge>
             ))}
             {trimmedSearch && (
               <Badge
-                render={<button type="button" onClick={() => setSearch("")} />}
+                render={<button type="button" onClick={() => updateFilters(() => setSearch(""))} />}
                 variant="outline"
                 className="cursor-pointer gap-1"
               >
@@ -203,7 +206,7 @@ function ClusterContractsPanel({ clusterLabel, canManage }: { clusterLabel: stri
               </Badge>
             )}
             <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-              {isPending ? "Loading…" : `${visibleContracts.length} of ${contracts.length}`}
+              {isPending ? "Loading…" : `${data?.total ?? 0} of ${clusterTotal}`}
             </span>
             {isFetching && !isPending && (
               <RefreshCwIcon className="size-3.5 animate-spin text-primary" aria-label="Refreshing" />
@@ -270,7 +273,7 @@ function ClusterContractsPanel({ clusterLabel, canManage }: { clusterLabel: stri
               ) : visibleContracts.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={6} className="py-12 text-center text-sm text-muted-foreground">
-                    {contracts.length === 0 ? `No contracts in ${clusterLabel} yet.` : "No contracts match your filters."}
+                    {clusterTotal === 0 ? `No contracts in ${clusterLabel} yet.` : "No contracts match your filters."}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -343,6 +346,7 @@ function ClusterContractsPanel({ clusterLabel, canManage }: { clusterLabel: stri
               )}
             </TableBody>
           </Table>
+          {data && <TablePager page={page} total={data.total} onPageChange={setPage} isFetching={isFetching} />}
         </CardContent>
       </Card>
 

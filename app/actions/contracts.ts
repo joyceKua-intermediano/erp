@@ -3,19 +3,25 @@
 import type { ActionResult } from "@/lib/action-result";
 import { requireClusterPermission } from "@/lib/auth";
 import {
+  clusterTemplatesFilter,
   contractFormSchema,
   contractIdSchema,
+  contractListQuerySchema,
+  contractStatusWhere,
   deriveContractStatus,
   isSigned,
   normalizeSalary,
   stripHtml,
   toContractKind,
   type ClusterContract,
+  type ClusterContracts,
   type ContractDetail,
   type ContractFormInput,
   type ContractFormOptions,
+  type ContractListQuery,
 } from "@/lib/contracts";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import { pageArgs } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 
 const COLOMBIA = "Colombia";
@@ -64,18 +70,50 @@ function toClusterContract(contract: ContractListRow, now: Date): ClusterContrac
   };
 }
 
-export async function getClusterContracts(clusterId: string): Promise<ClusterContract[]> {
+function contractListWhere(companyId: bigint, query: ContractListQuery): Prisma.contractsWhereInput {
+  const filters: Prisma.contractsWhereInput[] = [{ intermediano_company_id: companyId, deleted_at: null }];
+  if (query.search) {
+    filters.push({
+      OR: [
+        { employees: { name: { contains: query.search } } },
+        { job_title: { contains: query.search } },
+        { companies: { is: { name: { contains: query.search } } } },
+        { partners: { is: { partner_name: { contains: query.search } } } },
+      ],
+    });
+  }
+  if (query.kind) filters.push({ contract_type: query.kind });
+  if (query.period === "fixed") filters.push({ end_date: { not: null } });
+  if (query.period === "open") filters.push({ end_date: null });
+  return { AND: filters };
+}
+
+export async function getClusterContracts(clusterId: string, query?: ContractListQuery): Promise<ClusterContracts> {
   const { clusterId: companyId } = await requireClusterPermission(clusterId, "contracts.view");
+  const listQuery = contractListQuerySchema.parse(query ?? {});
 
   try {
-    const contracts = await prisma.contracts.findMany({
-      where: { intermediano_company_id: companyId, deleted_at: null },
-      orderBy: [{ start_date: "desc" }, { id: "desc" }],
-      select: contractListSelect,
-    });
-
     const now = new Date();
-    return contracts.map((contract) => toClusterContract(contract, now));
+    const clusterWhere = { intermediano_company_id: companyId, deleted_at: null } satisfies Prisma.contractsWhereInput;
+    const where = contractListWhere(companyId, listQuery);
+    const [contracts, total, clusterTotal, active, pendingSignature] = await Promise.all([
+      prisma.contracts.findMany({
+        where,
+        orderBy: [{ start_date: "desc" }, { id: "desc" }],
+        select: contractListSelect,
+        ...pageArgs(listQuery.page),
+      }),
+      prisma.contracts.count({ where }),
+      prisma.contracts.count({ where: clusterWhere }),
+      prisma.contracts.count({ where: { AND: [clusterWhere, contractStatusWhere("active", now)] } }),
+      prisma.contracts.count({ where: { AND: [clusterWhere, contractStatusWhere("pending_signature", now)] } }),
+    ]);
+
+    return {
+      contracts: contracts.map((contract) => toClusterContract(contract, now)),
+      total,
+      stats: { contracts: clusterTotal, active, pendingSignature },
+    };
   } catch (error) {
     console.error("getClusterContracts failed", { clusterId: companyId.toString(), error });
     throw new Error("Could not load contracts for this cluster.");
@@ -188,25 +226,6 @@ async function findClusterCountry(companyId: bigint) {
     select: { country_id: true, countries: { select: { name: true } } },
   });
   return company ? { id: company.country_id, name: company.countries.name } : null;
-}
-
-// Templates made for this cluster, plus legacy ones that are only tied to its country (or to none).
-function clusterTemplatesFilter(companyId: bigint, countryId: bigint | null): Prisma.templatesWhereInput {
-  return {
-    deleted_at: null,
-    OR: [{ contract_type: null }, { contract_type: "employee" }],
-    AND: [
-      {
-        OR: [
-          { intermediano_company_id: companyId },
-          {
-            intermediano_company_id: null,
-            OR: [{ country_id: null }, ...(countryId === null ? [] : [{ country_id: countryId }])],
-          },
-        ],
-      },
-    ],
-  };
 }
 
 export async function getContractFormOptions(clusterId: string): Promise<ContractFormOptions> {

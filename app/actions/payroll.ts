@@ -4,22 +4,27 @@ import type { ActionResult } from "@/lib/action-result";
 import { requireClusterPermission } from "@/lib/auth";
 import { normalizeSalary } from "@/lib/contracts";
 import { Prisma } from "@/lib/generated/prisma/client";
+import { pageArgs } from "@/lib/pagination";
 import {
   allowedProvisionTypes,
+  earlierPayrollRuns,
   payrollFormSchema,
   payrollIdSchema,
+  payrollListQuerySchema,
   provisionTypeNames,
   type ClusterPayrolls,
   type PayrollDetail,
   type PayrollFormInput,
   type PayrollFormOptions,
   type PayrollListItem,
+  type PayrollListQuery,
 } from "@/lib/payroll";
 import { buildProvisionLedger, type LedgerRun } from "@/lib/payroll/ledger";
+import { payrollBreakdown, snapshotForRow } from "@/lib/payroll/snapshot";
 import { prisma } from "@/lib/prisma";
 import { quotationFields, type QuotationClusterKind } from "@/lib/quotations";
+import { breakdownVariants, variantWhere } from "@/lib/quotations/breakdown";
 import {
-  breakdownFor,
   findQuotationCluster,
   quotationSelect,
   toAmount,
@@ -42,6 +47,7 @@ function clusterPayrollsWhere(companyId: bigint) {
 
 const payrollSelect = {
   ...quotationSelect,
+  breakdown_snapshot: true,
   consultants: { select: { name: true } },
   payment_provisions: {
     orderBy: { id: "asc" },
@@ -52,7 +58,7 @@ const payrollSelect = {
 type PayrollRow = Prisma.quotationsGetPayload<{ select: typeof payrollSelect }>;
 
 function toListItem(row: PayrollRow, kind: QuotationClusterKind | null): PayrollListItem {
-  const breakdown = breakdownFor(row, kind);
+  const breakdown = payrollBreakdown(row, kind);
   return {
     id: row.id.toString(),
     title: row.title,
@@ -70,7 +76,7 @@ function toListItem(row: PayrollRow, kind: QuotationClusterKind | null): Payroll
 
 function toLedgerRun(row: PayrollRow, kind: QuotationClusterKind): LedgerRun {
   return {
-    breakdown: breakdownFor(row, kind),
+    breakdown: payrollBreakdown(row, kind),
     paid: row.payment_provisions.map((payment) => ({
       name: payment.provision_types.name,
       amount: toNumber(payment.amount),
@@ -78,19 +84,77 @@ function toLedgerRun(row: PayrollRow, kind: QuotationClusterKind): LedgerRun {
   };
 }
 
-export async function getClusterPayrolls(clusterId: string): Promise<ClusterPayrolls> {
+function payrollListWhere(
+  companyId: bigint,
+  kind: QuotationClusterKind | null,
+  query: PayrollListQuery,
+): Prisma.quotationsWhereInput {
+  const filters: Prisma.quotationsWhereInput[] = [clusterPayrollsWhere(companyId)];
+  if (query.search) {
+    filters.push({
+      OR: [
+        { consultants: { is: { name: { contains: query.search } } } },
+        { companies: { is: { name: { contains: query.search } } } },
+        { title: { contains: query.search } },
+      ],
+    });
+  }
+  if (query.month) filters.push({ title: { startsWith: query.month } });
+  if (query.consultantId) filters.push({ consultant_id: BigInt(query.consultantId) });
+  if (kind && query.variant) filters.push(variantWhere(kind, query.variant));
+  return { AND: filters };
+}
+
+const EMPTY_PAYROLLS: Omit<ClusterPayrolls, "kind"> = {
+  payrolls: [],
+  total: 0,
+  stats: { payrolls: 0, thisMonth: 0, consultants: 0 },
+  consultants: [],
+  variants: [],
+};
+
+export async function getClusterPayrolls(clusterId: string, query?: PayrollListQuery): Promise<ClusterPayrolls> {
   const { clusterId: companyId } = await requireClusterPermission(clusterId, "payroll.view");
+  const listQuery = payrollListQuerySchema.parse(query ?? {});
 
   try {
     const cluster = await findQuotationCluster(companyId);
-    if (!cluster) return { kind: null, payrolls: [] };
+    if (!cluster) return { kind: null, ...EMPTY_PAYROLLS };
 
-    const payrolls = await prisma.quotations.findMany({
-      where: clusterPayrollsWhere(companyId),
-      orderBy: [{ title: "desc" }, { id: "desc" }],
-      select: payrollSelect,
-    });
-    return { kind: cluster.kind, payrolls: payrolls.map((row) => toListItem(row, cluster.kind)) };
+    const { kind } = cluster;
+    const clusterWhere = clusterPayrollsWhere(companyId);
+    const where = payrollListWhere(companyId, kind, listQuery);
+    const thisMonth = new Date().toISOString().slice(0, 7);
+    const [payrolls, total, clusterTotal, thisMonthTotal, consultants, variantCounts] = await Promise.all([
+      prisma.quotations.findMany({
+        where,
+        orderBy: [{ title: "desc" }, { id: "desc" }],
+        select: payrollSelect,
+        ...pageArgs(listQuery.page),
+      }),
+      prisma.quotations.count({ where }),
+      prisma.quotations.count({ where: clusterWhere }),
+      prisma.quotations.count({ where: { ...clusterWhere, title: { startsWith: thisMonth } } }),
+      prisma.consultants.findMany({
+        where: { quotations: { some: clusterWhere } },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
+      Promise.all(
+        (kind ? breakdownVariants(kind) : []).map(async (variant) => ({
+          variant,
+          count: kind ? await prisma.quotations.count({ where: { AND: [clusterWhere, variantWhere(kind, variant)] } }) : 0,
+        })),
+      ),
+    ]);
+    return {
+      kind,
+      payrolls: payrolls.map((row) => toListItem(row, kind)),
+      total,
+      stats: { payrolls: clusterTotal, thisMonth: thisMonthTotal, consultants: consultants.length },
+      consultants: consultants.map((consultant) => ({ id: consultant.id.toString(), name: consultant.name })),
+      variants: variantCounts.filter(({ count }) => count > 0).map(({ variant }) => variant),
+    };
   } catch (error) {
     console.error("getClusterPayrolls failed", { clusterId: companyId.toString(), error });
     throw new Error("Could not load payroll for this cluster.");
@@ -117,11 +181,11 @@ export async function getPayroll(clusterId: string, payrollId: string): Promise<
     let ledger: PayrollDetail["ledger"] = null;
     if (kind && row.consultant_id !== null) {
       // Legacy accrues provisions over every earlier run billed for the same consultant in this cluster.
-      const previousRuns = await prisma.quotations.findMany({
-        where: { ...clusterPayrollsWhere(companyId), consultant_id: row.consultant_id, title: { lt: row.title } },
-        orderBy: [{ title: "asc" }, { id: "asc" }],
+      const consultantRuns = await prisma.quotations.findMany({
+        where: { ...clusterPayrollsWhere(companyId), consultant_id: row.consultant_id, id: { not: row.id } },
         select: payrollSelect,
       });
+      const previousRuns = earlierPayrollRuns(consultantRuns, row);
       ledger = buildProvisionLedger(
         allowedProvisionTypes(kind, row.is_integral),
         toLedgerRun(row, kind),
@@ -159,7 +223,7 @@ export async function getPayroll(clusterId: string, payrollId: string): Promise<
       eps: toAmount(payrollCosts?.eps),
       clusterLabel: cluster.label,
       createdAt: row.created_at?.toISOString() ?? null,
-      breakdown: breakdownFor(row, kind),
+      breakdown: payrollBreakdown(row, kind),
       provisions: row.payment_provisions.map((payment) => ({
         provisionTypeId: payment.provision_type_id.toString(),
         name: payment.provision_types.name,
@@ -301,6 +365,13 @@ async function validatePayrollInput(
   };
 }
 
+// Prices the row as just written, inside the same transaction, and saves that breakdown with it.
+async function saveBreakdownSnapshot(tx: Prisma.TransactionClient, quotationId: bigint, kind: QuotationClusterKind) {
+  const row = await tx.quotations.findUnique({ where: { id: quotationId }, select: quotationSelect });
+  if (!row) return;
+  await tx.quotations.update({ where: { id: quotationId }, data: { breakdown_snapshot: snapshotForRow(row, kind) } });
+}
+
 async function replaceProvisions(
   tx: Prisma.TransactionClient,
   quotationId: bigint,
@@ -345,6 +416,7 @@ export async function createPayroll(clusterId: string, input: PayrollFormInput):
         });
       }
       await replaceProvisions(tx, created.id, provisions, now);
+      if (cluster.kind) await saveBreakdownSnapshot(tx, created.id, cluster.kind);
       return created;
     });
     return { ok: true, data: { id: payroll.id.toString() } };
@@ -400,6 +472,7 @@ export async function updatePayroll(
         }
       }
       await replaceProvisions(tx, id, provisions, now);
+      if (cluster.kind) await saveBreakdownSnapshot(tx, id, cluster.kind);
       return true;
     });
     if (!updated) return { ok: false, error: "This payroll no longer exists in this cluster." };

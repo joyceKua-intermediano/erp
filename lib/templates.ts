@@ -61,6 +61,8 @@ export type TemplateMetaInput = z.input<typeof templateMetaSchema>
 const sampleSchema = {
   contractId: z.string().regex(/^\d+$/, "Choose a sample contract."),
   clusterId: z.string().regex(/^\d+$/, "Choose a sample contract."),
+  // The saved template being viewed; people who can't edit templates preview its saved code, not what they send.
+  templateId: z.string().regex(/^\d+$/, "Invalid template id.").optional(),
 }
 
 export const templatePreviewSchema = z.discriminatedUnion("mode", [

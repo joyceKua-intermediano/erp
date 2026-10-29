@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AuthCard } from "@/components/auth/auth-card";
+import { ClientStateReset } from "@/components/auth/client-state-reset";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
@@ -27,6 +28,7 @@ export default function NoAccessPage() {
       title="Your account has no role yet"
       description="You're signed in, but an administrator still needs to assign you a role before you can use the admin console."
     >
+      <ClientStateReset />
       <div className="flex flex-col gap-4">
         <Suspense fallback={<Skeleton className="h-10 rounded-xl" />}>
           <SignedInAs />

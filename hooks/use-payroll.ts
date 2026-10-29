@@ -1,4 +1,4 @@
-import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { keepPreviousData, skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   archivePayroll,
   createPayroll,
@@ -9,7 +9,7 @@ import {
 } from "@/app/actions/payroll"
 import { unwrapActionResult } from "@/lib/action-result"
 import type { ClusterId } from "@/lib/clusters"
-import type { PayrollFormInput } from "@/lib/payroll"
+import type { PayrollFormInput, PayrollListQuery } from "@/lib/payroll"
 import { useUiStore } from "@/store/use-ui-store"
 
 export const payrollQueryKeys = {
@@ -19,12 +19,13 @@ export const payrollQueryKeys = {
   formOptions: (clusterId: ClusterId | null) => ["cluster", clusterId, "payroll-form-options"] as const,
 }
 
-export function usePayrolls() {
+export function usePayrolls(query: PayrollListQuery) {
   const activeCluster = useUiStore((state) => state.activeCluster)
 
   return useQuery({
-    queryKey: payrollQueryKeys.list(activeCluster),
-    queryFn: activeCluster ? () => getClusterPayrolls(activeCluster) : skipToken,
+    queryKey: [...payrollQueryKeys.list(activeCluster), query] as const,
+    queryFn: activeCluster ? () => getClusterPayrolls(activeCluster, query) : skipToken,
+    placeholderData: keepPreviousData,
   })
 }
 

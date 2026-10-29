@@ -17,15 +17,7 @@ import {
   type TemplateFormInput,
 } from "@/lib/templates";
 import { parseTemplateDocument } from "@/lib/templates/blocks";
-
-// Templates without a cluster are shared, so they stay visible to everyone with Configuration access.
-function visibleTemplates(scope: ClusterScope): Prisma.templatesWhereInput {
-  const clusterFilter = clusterIdFilter(scope);
-  return {
-    deleted_at: null,
-    ...(clusterFilter && { OR: [{ intermediano_company_id: null }, { intermediano_company_id: clusterFilter }] }),
-  };
-}
+import { visibleTemplates } from "@/lib/templates/records";
 
 const templateSelect = {
   id: true,

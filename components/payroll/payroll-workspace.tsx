@@ -30,33 +30,19 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { TablePager } from "@/components/table-pager"
 import { useActiveCluster } from "@/hooks/use-clusters"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { usePayrolls } from "@/hooks/use-payroll"
+import { SEARCH_DEBOUNCE_MS } from "@/lib/pagination"
 import type { PayrollListItem } from "@/lib/payroll"
-import { formatAmount, formatQuotationTitle, quotationDateFromTitle } from "@/lib/quotations"
+import { formatAmount, formatQuotationTitle } from "@/lib/quotations"
 import { ArchivePayrollDialog } from "./archive-payroll-dialog"
 import { PayrollFormSheet } from "./payroll-form-sheet"
 
 const CHOOSE_CLUSTER_DESCRIPTION = "Payroll is scoped to one Intermediano legal entity at a time."
 
 const ALL_CONSULTANTS = "all"
-
-function matchesSearch(payroll: PayrollListItem, query: string) {
-  const needle = query.trim().toLowerCase()
-  if (!needle) return true
-  return [payroll.consultantName, payroll.companyName, payroll.title]
-    .filter((value): value is string => Boolean(value))
-    .some((value) => value.toLowerCase().includes(needle))
-}
-
-function matchesMonth(payroll: PayrollListItem, month: string) {
-  if (!month) return true
-  return quotationDateFromTitle(payroll.title)?.startsWith(month) ?? false
-}
-
-function currentMonth() {
-  return new Date().toISOString().slice(0, 7)
-}
 
 function FilterBadge({ isActive, onClick, children }: { isActive: boolean; onClick: () => void; children: string }) {
   return (
@@ -107,40 +93,37 @@ function ClusterPayrollPanel({ clusterLabel, canManage }: { clusterLabel: string
     open: false,
     payroll: null,
   })
-  const { data, isPending, isError, isFetching, refetch } = usePayrolls()
+  const [page, setPage] = useState(1)
+  const debouncedSearch = useDebouncedValue(search.trim(), SEARCH_DEBOUNCE_MS)
+  const { data, isPending, isError, isFetching, refetch } = usePayrolls({
+    page,
+    search: debouncedSearch,
+    month,
+    consultantId: consultantFilter === ALL_CONSULTANTS ? null : consultantFilter,
+    variant: variantFilter,
+  })
 
-  const payrolls = data?.payrolls ?? []
+  const visiblePayrolls = data?.payrolls ?? []
+  const clusterTotal = data?.stats.payrolls ?? 0
   const isPorted = data?.kind != null
-  const variants = [...new Set(payrolls.map((payroll) => payroll.variant).filter((value) => value !== null))]
-  const consultants = [
-    ...new Map(
-      payrolls.flatMap((payroll) =>
-        payroll.consultantId && payroll.consultantName ? [[payroll.consultantId, payroll.consultantName] as const] : []
-      )
-    ),
-  ].sort(([, a], [, b]) => a.localeCompare(b))
+  const variants = data?.variants ?? []
+  const consultants = data?.consultants ?? []
   const consultantItems = [
     { label: "All consultants", value: ALL_CONSULTANTS },
-    ...consultants.map(([id, name]) => ({ label: name, value: id })),
+    ...consultants.map(({ id, name }) => ({ label: name, value: id })),
   ]
-  const visiblePayrolls = payrolls.filter(
-    (payroll) =>
-      matchesSearch(payroll, search) &&
-      matchesMonth(payroll, month) &&
-      (consultantFilter === ALL_CONSULTANTS || payroll.consultantId === consultantFilter) &&
-      (variantFilter === null || payroll.variant === variantFilter)
-  )
   const trimmedSearch = search.trim()
-  const thisMonth = currentMonth()
+
+  // Any change to the filters starts again from the first page.
+  function updateFilters(apply: () => void) {
+    apply()
+    setPage(1)
+  }
 
   const stats = [
-    { label: "Payroll runs", value: payrolls.length, icon: CoinsIcon },
-    {
-      label: "This month",
-      value: payrolls.filter((payroll) => matchesMonth(payroll, thisMonth)).length,
-      icon: CalendarIcon,
-    },
-    { label: "Consultants", value: consultants.length, icon: UsersIcon },
+    { label: "Payroll runs", value: clusterTotal, icon: CoinsIcon },
+    { label: "This month", value: data?.stats.thisMonth ?? 0, icon: CalendarIcon },
+    { label: "Consultants", value: data?.stats.consultants ?? 0, icon: UsersIcon },
   ]
 
   return (
@@ -188,7 +171,7 @@ function ClusterPayrollPanel({ clusterLabel, canManage }: { clusterLabel: string
               <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => updateFilters(() => setSearch(event.target.value))}
                 placeholder="Search consultant or customer…"
                 aria-label="Search payroll"
                 className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
@@ -205,14 +188,16 @@ function ClusterPayrollPanel({ clusterLabel, canManage }: { clusterLabel: string
             <Input
               type="month"
               value={month}
-              onChange={(event) => setMonth(event.target.value)}
+              onChange={(event) => updateFilters(() => setMonth(event.target.value))}
               aria-label="Filter by month"
               className="h-7 w-40 text-xs focus-visible:border-primary focus-visible:ring-primary/25"
             />
             {consultants.length > 1 && (
               <Select
                 value={consultantFilter}
-                onValueChange={(next) => setConsultantFilter((next as string | null) ?? ALL_CONSULTANTS)}
+                onValueChange={(next) =>
+                  updateFilters(() => setConsultantFilter((next as string | null) ?? ALL_CONSULTANTS))
+                }
                 items={consultantItems}
               >
                 <SelectTrigger size="sm" className="h-7 w-48 text-xs" aria-label="Filter by consultant">
@@ -229,11 +214,15 @@ function ClusterPayrollPanel({ clusterLabel, canManage }: { clusterLabel: string
             )}
             {variants.length > 1 && (
               <>
-                <FilterBadge isActive={variantFilter === null} onClick={() => setVariantFilter(null)}>
+                <FilterBadge isActive={variantFilter === null} onClick={() => updateFilters(() => setVariantFilter(null))}>
                   All types
                 </FilterBadge>
                 {variants.map((variant) => (
-                  <FilterBadge key={variant} isActive={variantFilter === variant} onClick={() => setVariantFilter(variant)}>
+                  <FilterBadge
+                    key={variant}
+                    isActive={variantFilter === variant}
+                    onClick={() => updateFilters(() => setVariantFilter(variant))}
+                  >
                     {variant}
                   </FilterBadge>
                 ))}
@@ -241,7 +230,7 @@ function ClusterPayrollPanel({ clusterLabel, canManage }: { clusterLabel: string
             )}
             {trimmedSearch && (
               <Badge
-                render={<button type="button" onClick={() => setSearch("")} />}
+                render={<button type="button" onClick={() => updateFilters(() => setSearch(""))} />}
                 variant="outline"
                 className="cursor-pointer gap-1"
               >
@@ -251,7 +240,7 @@ function ClusterPayrollPanel({ clusterLabel, canManage }: { clusterLabel: string
               </Badge>
             )}
             <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-              {isPending ? "Loading…" : `${visiblePayrolls.length} of ${payrolls.length}`}
+              {isPending ? "Loading…" : `${data?.total ?? 0} of ${clusterTotal}`}
             </span>
             {isFetching && !isPending && (
               <RefreshCwIcon className="size-3.5 animate-spin text-primary" aria-label="Refreshing" />
@@ -314,7 +303,7 @@ function ClusterPayrollPanel({ clusterLabel, canManage }: { clusterLabel: string
               ) : visiblePayrolls.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={5} className="py-12 text-center text-sm text-muted-foreground">
-                    {payrolls.length === 0 ? `No payroll runs in ${clusterLabel} yet.` : "No payroll runs match your filters."}
+                    {clusterTotal === 0 ? `No payroll runs in ${clusterLabel} yet.` : "No payroll runs match your filters."}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -382,6 +371,7 @@ function ClusterPayrollPanel({ clusterLabel, canManage }: { clusterLabel: string
               )}
             </TableBody>
           </Table>
+          {data && <TablePager page={page} total={data.total} onPageChange={setPage} isFetching={isFetching} />}
         </CardContent>
       </Card>
 

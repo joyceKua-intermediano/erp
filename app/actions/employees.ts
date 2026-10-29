@@ -7,74 +7,139 @@ import { deriveContractStatus } from "@/lib/contracts";
 import {
   employeeFormSchema,
   employeeIdSchema,
+  employeeListQuerySchema,
   type ClusterEmployee,
+  type ClusterEmployees,
   type ConsultantOption,
   type EmployeeDetail,
   type EmployeeFormInput,
+  type EmployeeListQuery,
 } from "@/lib/employees";
 import { Prisma } from "@/lib/generated/prisma/client";
+import { pageArgs } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 
 function toIsoDate(value: Date | null) {
   return value ? value.toISOString().slice(0, 10) : null;
 }
 
-export async function getClusterEmployees(clusterId: string): Promise<ClusterEmployee[]> {
+export async function getClusterEmployees(clusterId: string, query?: EmployeeListQuery): Promise<ClusterEmployees> {
   const { clusterId: companyId } = await requireClusterPermission(clusterId, "employees.view");
+  const listQuery = employeeListQuerySchema.parse(query ?? {});
 
   const clusterContracts = {
     intermediano_company_id: companyId,
     deleted_at: null,
   };
+  const latestContract = {
+    where: clusterContracts,
+    orderBy: [{ start_date: "desc" }, { id: "desc" }],
+    take: 1,
+  } satisfies Prisma.employees$contractsArgs;
+
+  const clusterWhere = { deleted_at: null, intermediano_company_id: companyId } satisfies Prisma.employeesWhereInput;
+  const where: Prisma.employeesWhereInput = listQuery.search
+    ? {
+        AND: [
+          clusterWhere,
+          {
+            OR: [
+              { name: { contains: listQuery.search } },
+              { email: { contains: listQuery.search } },
+              { contracts: { some: { ...clusterContracts, job_title: { contains: listQuery.search } } } },
+              {
+                contracts: {
+                  some: { ...clusterContracts, companies: { is: { name: { contains: listQuery.search } } } },
+                },
+              },
+            ],
+          },
+        ],
+      }
+    : clusterWhere;
 
   try {
-    const employees = await prisma.employees.findMany({
-      where: {
-        deleted_at: null,
-        intermediano_company_id: companyId,
-      },
-      orderBy: { name: "asc" },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        consultants: { select: { name: true } },
-        contracts: {
-          where: clusterContracts,
-          orderBy: [{ start_date: "desc" }, { id: "desc" }],
-          take: 1,
-          select: {
-            job_title: true,
-            start_date: true,
-            end_date: true,
-            signature: true,
-            admin_signature: true,
-            companies: { select: { name: true } },
+    const now = new Date();
+    const [employees, total, statusRows] = await Promise.all([
+      prisma.employees.findMany({
+        where,
+        orderBy: { name: "asc" },
+        ...pageArgs(listQuery.page),
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          consultants: { select: { name: true } },
+          contracts: {
+            ...latestContract,
+            select: {
+              job_title: true,
+              start_date: true,
+              end_date: true,
+              signature: true,
+              admin_signature: true,
+              companies: { select: { name: true } },
+            },
           },
         },
+      }),
+      prisma.employees.count({ where }),
+      // Statuses depend on each employee's latest contract, so only the fields that decide them are read.
+      prisma.employees.findMany({
+        where: clusterWhere,
+        select: {
+          contracts: {
+            ...latestContract,
+            select: { start_date: true, end_date: true, signature: true, admin_signature: true },
+          },
+        },
+      }),
+    ]);
+
+    const statuses = statusRows.map((employee) => deriveContractStatus(employee.contracts[0], now));
+    return {
+      employees: employees.map((employee) => toClusterEmployee(employee, now)),
+      total,
+      stats: {
+        employees: statusRows.length,
+        active: statuses.filter((status) => status === "active").length,
+        pendingSignature: statuses.filter((status) => status === "pending_signature").length,
       },
-    });
-
-    const now = new Date();
-
-    return employees.map((employee) => {
-      const [contract] = employee.contracts;
-      return {
-        id: employee.id.toString(),
-        name: employee.name,
-        email: employee.email,
-        position: contract?.job_title ?? null,
-        clientCompany: contract?.companies?.name ?? null,
-        consultant: employee.consultants?.name ?? null,
-        contractStart: toIsoDate(contract?.start_date ?? null),
-        contractEnd: toIsoDate(contract?.end_date ?? null),
-        contractStatus: deriveContractStatus(contract, now),
-      };
-    });
+    };
   } catch (error) {
     console.error("getClusterEmployees failed", { clusterId: companyId.toString(), error });
     throw new Error("Could not load employees for this cluster.");
   }
+}
+
+type ClusterEmployeeRow = {
+  id: bigint;
+  name: string;
+  email: string;
+  consultants: { name: string } | null;
+  contracts: {
+    job_title: string | null;
+    start_date: Date | null;
+    end_date: Date | null;
+    signature: string | null;
+    admin_signature: string | null;
+    companies: { name: string } | null;
+  }[];
+};
+
+function toClusterEmployee(employee: ClusterEmployeeRow, now: Date): ClusterEmployee {
+  const [contract] = employee.contracts;
+  return {
+    id: employee.id.toString(),
+    name: employee.name,
+    email: employee.email,
+    position: contract?.job_title ?? null,
+    clientCompany: contract?.companies?.name ?? null,
+    consultant: employee.consultants?.name ?? null,
+    contractStart: toIsoDate(contract?.start_date ?? null),
+    contractEnd: toIsoDate(contract?.end_date ?? null),
+    contractStatus: deriveContractStatus(contract, now),
+  };
 }
 
 export async function getEmployee(clusterId: string, employeeId: string): Promise<EmployeeDetail | null> {

@@ -8,6 +8,8 @@ declare module "next-auth" {
       role: string | null
       permissions: string[]
       clusters: ClusterScope
+      // Only set on employee portal sessions, which come from lib/employee-auth.ts.
+      employeeId?: string
     } & DefaultSession["user"]
   }
 }
@@ -19,5 +21,6 @@ declare module "@auth/core/jwt" {
     permissions?: string[]
     clusters?: ClusterScope
     accessCheckedAt?: number
+    employeeId?: string
   }
 }

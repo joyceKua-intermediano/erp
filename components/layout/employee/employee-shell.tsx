@@ -12,6 +12,7 @@ import {
   UserRoundIcon,
 } from "lucide-react"
 import { cn } from "cn"
+import { AppLogo } from "@/components/brand/app-logo"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -28,7 +29,13 @@ const employeeNavItems: NavItem[] = [
   { title: "Documents", href: "/employee/documents", icon: FolderOpenIcon },
 ]
 
-export function EmployeeShell({ children }: { children: ReactNode }) {
+type EmployeeShellProps = {
+  children: ReactNode
+  account?: ReactNode
+  profile?: ReactNode
+}
+
+export function EmployeeShell({ children, account, profile }: EmployeeShellProps) {
   const pathname = usePathname()
 
   return (
@@ -43,9 +50,7 @@ export function EmployeeShell({ children }: { children: ReactNode }) {
             className="lg:hidden"
           />
           <Link href="/employee/dashboard" className="flex items-center gap-2.5">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
-              I
-            </span>
+            <AppLogo />
             <span className="text-sm font-semibold tracking-tight">Intermediano</span>
             <Badge variant="outline" className="hidden sm:inline-flex">
               Employee hub
@@ -53,6 +58,7 @@ export function EmployeeShell({ children }: { children: ReactNode }) {
           </Link>
           <div className="ml-auto flex items-center gap-1">
             <ThemeToggle />
+            {account}
           </div>
         </div>
       </header>
@@ -65,12 +71,14 @@ export function EmployeeShell({ children }: { children: ReactNode }) {
                   <UserRoundIcon className="size-7 text-muted-foreground" />
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col gap-1">
-                <span className="text-base font-semibold">My profile</span>
-                <span className="text-sm text-muted-foreground">
-                  Personal details, contract and payroll documents
-                </span>
-              </div>
+              {profile ?? (
+                <div className="flex flex-col gap-1">
+                  <span className="text-base font-semibold">My profile</span>
+                  <span className="text-sm text-muted-foreground">
+                    Personal details, contract and payroll documents
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
           <nav className="flex flex-col gap-1" aria-label="Employee hub">

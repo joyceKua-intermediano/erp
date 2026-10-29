@@ -1,4 +1,4 @@
-import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { keepPreviousData, skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   archiveContract,
   createContract,
@@ -9,7 +9,7 @@ import {
 } from "@/app/actions/contracts"
 import { unwrapActionResult } from "@/lib/action-result"
 import type { ClusterId } from "@/lib/clusters"
-import type { ContractFormInput } from "@/lib/contracts"
+import type { ContractFormInput, ContractListQuery } from "@/lib/contracts"
 import { useUiStore } from "@/store/use-ui-store"
 import { employeeQueryKeys } from "./use-employees"
 
@@ -19,12 +19,13 @@ export const contractQueryKeys = {
   formOptions: (clusterId: ClusterId | null) => ["cluster", clusterId, "contract-form-options"] as const,
 }
 
-export function useContracts() {
+export function useContracts(query: ContractListQuery) {
   const activeCluster = useUiStore((state) => state.activeCluster)
 
   return useQuery({
-    queryKey: contractQueryKeys.cluster(activeCluster),
-    queryFn: activeCluster ? () => getClusterContracts(activeCluster) : skipToken,
+    queryKey: [...contractQueryKeys.cluster(activeCluster), "list", query] as const,
+    queryFn: activeCluster ? () => getClusterContracts(activeCluster, query) : skipToken,
+    placeholderData: keepPreviousData,
   })
 }
 
