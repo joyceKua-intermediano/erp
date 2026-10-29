@@ -13,6 +13,7 @@ import {
   FileTextIcon,
   HandshakeIcon,
   LayoutDashboardIcon,
+  PlaneIcon,
   ShieldCheckIcon,
   UserSearchIcon,
   UsersIcon,
@@ -48,6 +49,7 @@ const clusterItems: ClusterNavItem[] = [
   { title: "Employees", href: "/admin/employees", icon: UsersIcon, permission: "employees.view", module: "employees" },
   { title: "Contracts", href: "/admin/contracts", icon: FileSignatureIcon, permission: "contracts.view", module: "contracts" },
   { title: "Timesheets", href: "/admin/timesheets", icon: CalendarClockIcon, permission: "timesheets.view", module: "timesheets" },
+  { title: "Vacations", href: "/admin/vacations", icon: PlaneIcon, permission: "employees.view", module: "employees" },
   { title: "Payroll", href: "/admin/payroll", icon: CoinsIcon, permission: "payroll.view", module: "payroll" },
 ]
 

@@ -8,6 +8,7 @@ import {
   FileSignatureIcon,
   FolderOpenIcon,
   LayoutDashboardIcon,
+  PlaneIcon,
   ReceiptIcon,
   UserRoundIcon,
 } from "lucide-react"
@@ -25,6 +26,7 @@ const employeeNavItems: NavItem[] = [
   { title: "Profile", href: "/employee/profile", icon: UserRoundIcon },
   { title: "Contract", href: "/employee/contract", icon: FileSignatureIcon },
   { title: "Timesheets", href: "/employee/timesheets", icon: CalendarClockIcon },
+  { title: "Vacations", href: "/employee/vacations", icon: PlaneIcon },
   { title: "Payslips", href: "/employee/payslips", icon: ReceiptIcon },
   { title: "Documents", href: "/employee/documents", icon: FolderOpenIcon },
 ]
