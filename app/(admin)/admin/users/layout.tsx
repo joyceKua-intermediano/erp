@@ -7,7 +7,7 @@ export default function UsersLayout({ children }: LayoutProps<"/admin/users">) {
       <PageHeader
         eyebrow="Settings"
         title="Users & roles"
-        description="Who can sign in to the admin console, and what each role is allowed to see and change."
+        description="Who can sign in to the admin console and the Client portal, and what each role is allowed to see and change."
       />
       <div className="flex flex-col gap-6">
         <AccessTabs />

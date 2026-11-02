@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ShieldCheckIcon, UsersIcon } from "lucide-react"
+import { KeyRoundIcon, ShieldCheckIcon, UsersIcon } from "lucide-react"
 import { cn } from "cn"
 import { isActivePath } from "@/lib/navigation"
 
@@ -13,6 +13,12 @@ const tabs = [
     href: "/admin/users/roles",
     icon: ShieldCheckIcon,
     isActive: (pathname: string) => isActivePath(pathname, "/admin/users/roles"),
+  },
+  {
+    title: "Portal accounts",
+    href: "/admin/users/portal-accounts",
+    icon: KeyRoundIcon,
+    isActive: (pathname: string) => isActivePath(pathname, "/admin/users/portal-accounts"),
   },
 ]
 

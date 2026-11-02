@@ -28,6 +28,8 @@ async function CompanySlot({ params }: { params: PageProps<"/admin/companies/[co
       canManage={hasPermission(user, "companies.manage")}
       canViewContacts={hasPermission(user, "contacts.view")}
       canManageContacts={hasPermission(user, "contacts.manage")}
+      canViewPortalAccounts={hasPermission(user, "users.view")}
+      canManagePortalAccounts={hasPermission(user, "users.manage")}
     />
   );
 }

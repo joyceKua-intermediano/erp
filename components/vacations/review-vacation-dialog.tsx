@@ -1,5 +1,6 @@
 "use client"
 
+import type { UseMutationResult } from "@tanstack/react-query"
 import { CheckIcon, Loader2Icon, XIcon } from "lucide-react"
 import {
   AlertDialog,
@@ -13,7 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useReviewVacationRequest } from "@/hooks/use-vacation-requests"
-import { formatDays, formatVacationRange, type VacationRequestItem } from "@/lib/vacations"
+import { formatDays, formatVacationRange, type VacationRequestItem, type VacationReviewInput } from "@/lib/vacations"
 
 export type VacationReview = { request: VacationRequestItem; status: "approved" | "rejected" }
 
@@ -22,8 +23,21 @@ type ReviewVacationDialogProps = {
   onOpenChange: (open: boolean) => void
 }
 
-export function ReviewVacationDialog({ review, onOpenChange }: ReviewVacationDialogProps) {
+export type VacationReviewMutation = Pick<
+  UseMutationResult<unknown, Error, { requestId: string; input: VacationReviewInput }>,
+  "mutate" | "reset" | "isPending" | "isError" | "error"
+>
+
+export function ReviewVacationDialog(props: ReviewVacationDialogProps) {
   const reviewRequest = useReviewVacationRequest()
+  return <ReviewVacationDialogView {...props} reviewRequest={reviewRequest} />
+}
+
+export function ReviewVacationDialogView({
+  review,
+  onOpenChange,
+  reviewRequest,
+}: ReviewVacationDialogProps & { reviewRequest: VacationReviewMutation }) {
   const isApprove = review?.status === "approved"
 
   function handleOpenChange(open: boolean) {
@@ -69,7 +83,7 @@ export function ReviewVacationDialog({ review, onOpenChange }: ReviewVacationDia
         </AlertDialogHeader>
         {reviewRequest.isError && (
           <p role="alert" className="text-sm text-destructive">
-            {reviewRequest.error.message}
+            {reviewRequest.error?.message}
           </p>
         )}
         <AlertDialogFooter>

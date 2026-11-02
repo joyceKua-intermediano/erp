@@ -101,7 +101,7 @@ function ClusterExpenseClaim({
   return <ExpenseClaimContent claim={claim} clusterId={clusterId} clusterLabel={clusterLabel} canManage={canManage} />
 }
 
-function ReceiptPreview({ src, label }: { src: string | null; label: string }) {
+export function ReceiptPreview({ src, label }: { src: string | null; label: string }) {
   const [isBroken, setBroken] = useState(false)
 
   return (
@@ -129,7 +129,7 @@ function AmountRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function LineAmounts({ claim, line }: { claim: ExpenseClaim; line: ExpenseLine }) {
+export function LineAmounts({ claim, line }: { claim: ExpenseClaim; line: ExpenseLine }) {
   const local = claim.currencyName
   const show = (value: number | null, currency: string | null) => (value === null ? "—" : formatMoney(value, currency))
 

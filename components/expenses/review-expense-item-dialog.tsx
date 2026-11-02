@@ -1,5 +1,6 @@
 "use client"
 
+import type { UseMutationResult } from "@tanstack/react-query"
 import { useId, useState } from "react"
 import { CheckIcon, Loader2Icon, XIcon } from "lucide-react"
 import {
@@ -16,7 +17,7 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
 import { useReviewExpenseItem } from "@/hooks/use-expenses"
-import { claimCurrency, formatExpenseDate, formatMoney, type ExpenseClaim } from "@/lib/expenses"
+import { claimCurrency, formatExpenseDate, formatMoney, type ExpenseClaim, type ExpenseReviewInput } from "@/lib/expenses"
 
 export type ExpenseItemReview = { claim: ExpenseClaim; index: number; status: "approved" | "rejected" }
 
@@ -27,9 +28,22 @@ type ReviewExpenseItemDialogProps = {
   onOpenChange: (open: boolean) => void
 }
 
-export function ReviewExpenseItemDialog({ review, onOpenChange }: ReviewExpenseItemDialogProps) {
-  const commentId = useId()
+export type ExpenseItemReviewMutation = Pick<
+  UseMutationResult<unknown, Error, { expenseId: string; input: ExpenseReviewInput }>,
+  "mutate" | "reset" | "isPending" | "isError" | "error"
+>
+
+export function ReviewExpenseItemDialog(props: ReviewExpenseItemDialogProps) {
   const reviewItem = useReviewExpenseItem()
+  return <ReviewExpenseItemDialogView {...props} reviewItem={reviewItem} />
+}
+
+export function ReviewExpenseItemDialogView({
+  review,
+  onOpenChange,
+  reviewItem,
+}: ReviewExpenseItemDialogProps & { reviewItem: ExpenseItemReviewMutation }) {
+  const commentId = useId()
   const [comments, setComments] = useState("")
   const isApprove = review?.status === "approved"
   const line = review ? review.claim.lines[review.index] : null
@@ -95,7 +109,7 @@ export function ReviewExpenseItemDialog({ review, onOpenChange }: ReviewExpenseI
         </Field>
         {reviewItem.isError && (
           <p role="alert" className="text-sm text-destructive">
-            {reviewItem.error.message}
+            {reviewItem.error?.message}
           </p>
         )}
         <AlertDialogFooter>

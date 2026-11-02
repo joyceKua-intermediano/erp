@@ -6,7 +6,7 @@ const LOCK_MS = 15 * 60 * 1000
 const MAX_EMAIL_FAILURES = 5
 const MAX_IP_FAILURES = 30
 
-type AttemptKey = { key: string; maxFailures: number }
+type AttemptKey = { key: string; maxFailures: number; resetsOnSuccess: boolean }
 
 // Behind a proxy the client address is the first x-forwarded-for entry; without one, only the email is limited.
 function clientIp(request: Request | undefined) {
@@ -14,11 +14,13 @@ function clientIp(request: Request | undefined) {
   return forwarded || request?.headers.get("x-real-ip")?.trim() || null
 }
 
-export function loginAttemptKeys(email: string, request: Request | undefined): AttemptKey[] {
+// Portals other than the employee one pass a prefix, so the same email has a separate counter in each portal.
+export function loginAttemptKeys(email: string, request: Request | undefined, portal?: string): AttemptKey[] {
   const ip = clientIp(request)
+  const emailKey = portal ? `${portal}-email:${email}` : `email:${email}`
   return [
-    { key: `email:${email}`.slice(0, 191), maxFailures: MAX_EMAIL_FAILURES },
-    ...(ip ? [{ key: `ip:${ip}`.slice(0, 191), maxFailures: MAX_IP_FAILURES }] : []),
+    { key: emailKey.slice(0, 191), maxFailures: MAX_EMAIL_FAILURES, resetsOnSuccess: true },
+    ...(ip ? [{ key: `ip:${ip}`.slice(0, 191), maxFailures: MAX_IP_FAILURES, resetsOnSuccess: false }] : []),
   ]
 }
 
@@ -48,6 +50,6 @@ export async function recordLoginFailure(keys: AttemptKey[]): Promise<void> {
 
 // Only the email's counter resets: one working account mustn't clear the limit for an address guessing others.
 export async function clearLoginFailures(keys: AttemptKey[]): Promise<void> {
-  const emailKeys = keys.filter(({ key }) => key.startsWith("email:")).map(({ key }) => key)
+  const emailKeys = keys.filter(({ resetsOnSuccess }) => resetsOnSuccess).map(({ key }) => key)
   await prisma.login_attempts.deleteMany({ where: { key: { in: emailKeys } } })
 }

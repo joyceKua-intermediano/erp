@@ -316,6 +316,17 @@ export function rollupClaimStatus(statuses: readonly ExpenseStatus[]): ExpenseSt
   return "rejected"
 }
 
+// Legacy's "quick approve": every item still waiting is approved, and reviewed items keep their decision and comments.
+export function approvePendingItems(storedItems: Record<string, unknown>[]) {
+  let approved = 0
+  const items = storedItems.map((item) => {
+    if (toExpenseLine(item).status !== "pending") return item
+    approved++
+    return { ...item, status: "approved" }
+  })
+  return { items, approved, status: rollupClaimStatus(items.map((item) => toExpenseLine(item).status)) }
+}
+
 export type ClaimItemsResult =
   | { ok: true; items: Record<string, unknown>[]; status: ExpenseStatus; newReceipts: string[] }
   | { ok: false; error: string }
@@ -475,4 +486,8 @@ export function isEmployeeReceiptPath(path: string, employeeId: bigint | string)
 export function receiptUrl(expenseId: string, index: number, clusterId?: string | null) {
   const base = `/api/expenses/${expenseId}/receipts/${index}`
   return clusterId ? `${base}?cluster=${encodeURIComponent(clusterId)}` : base
+}
+
+export function customerReceiptUrl(expenseId: string, index: number) {
+  return `/api/expenses/${expenseId}/receipts/${index}?as=customer`
 }
