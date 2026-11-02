@@ -17,6 +17,7 @@ import {
   ShieldCheckIcon,
   UserSearchIcon,
   UsersIcon,
+  WalletIcon,
 } from "lucide-react"
 import { AppLogo } from "@/components/brand/app-logo"
 import {
@@ -43,13 +44,14 @@ const overviewItems: GatedNavItem[] = [
   { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboardIcon },
 ]
 
-// Only modules with a page in the new app are listed; add Expenses here once it's built.
+// Only modules with a page in the new app are listed.
 const clusterItems: ClusterNavItem[] = [
   { title: "Quotations", href: "/admin/quotations", icon: FileTextIcon, permission: "quotations.view", module: "quotations" },
   { title: "Employees", href: "/admin/employees", icon: UsersIcon, permission: "employees.view", module: "employees" },
   { title: "Contracts", href: "/admin/contracts", icon: FileSignatureIcon, permission: "contracts.view", module: "contracts" },
   { title: "Timesheets", href: "/admin/timesheets", icon: CalendarClockIcon, permission: "timesheets.view", module: "timesheets" },
   { title: "Vacations", href: "/admin/vacations", icon: PlaneIcon, permission: "employees.view", module: "employees" },
+  { title: "Expenses", href: "/admin/expenses", icon: WalletIcon, permission: "expenses.view", module: "expenses" },
   { title: "Payroll", href: "/admin/payroll", icon: CoinsIcon, permission: "payroll.view", module: "payroll" },
 ]
 

@@ -21,6 +21,8 @@ const envSchema = z.object({
   AUTH_EMPLOYEE_MICROSOFT_ENTRA_ID_ISSUER: z
     .url({ error: "must be an issuer URL" })
     .default("https://login.microsoftonline.com/common/v2.0"),
+  // Uploaded files such as expense receipts; relative paths resolve from the app's working directory.
+  STORAGE_DIR: z.string().trim().min(1, { error: "must not be empty" }).default("./storage"),
 })
 
 export type Env = Readonly<z.infer<typeof envSchema>>

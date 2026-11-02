@@ -11,6 +11,7 @@ import {
   PlaneIcon,
   ReceiptIcon,
   UserRoundIcon,
+  WalletIcon,
 } from "lucide-react"
 import { cn } from "cn"
 import { AppLogo } from "@/components/brand/app-logo"
@@ -27,6 +28,7 @@ const employeeNavItems: NavItem[] = [
   { title: "Contract", href: "/employee/contract", icon: FileSignatureIcon },
   { title: "Timesheets", href: "/employee/timesheets", icon: CalendarClockIcon },
   { title: "Vacations", href: "/employee/vacations", icon: PlaneIcon },
+  { title: "Expenses", href: "/employee/expenses", icon: WalletIcon },
   { title: "Payslips", href: "/employee/payslips", icon: ReceiptIcon },
   { title: "Documents", href: "/employee/documents", icon: FolderOpenIcon },
 ]
