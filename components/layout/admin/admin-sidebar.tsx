@@ -14,6 +14,7 @@ import {
   HandshakeIcon,
   LayoutDashboardIcon,
   PlaneIcon,
+  ReceiptIcon,
   ShieldCheckIcon,
   UserSearchIcon,
   UsersIcon,
@@ -53,6 +54,7 @@ const clusterItems: ClusterNavItem[] = [
   { title: "Vacations", href: "/admin/vacations", icon: PlaneIcon, permission: "employees.view", module: "employees" },
   { title: "Expenses", href: "/admin/expenses", icon: WalletIcon, permission: "expenses.view", module: "expenses" },
   { title: "Payroll", href: "/admin/payroll", icon: CoinsIcon, permission: "payroll.view", module: "payroll" },
+  { title: "Payslips", href: "/admin/payslips", icon: ReceiptIcon, permission: "payroll.view", module: "payslips" },
 ]
 
 const sharedGroups: { label: string; items: GatedNavItem[] }[] = [
