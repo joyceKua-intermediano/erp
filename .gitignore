@@ -42,6 +42,9 @@ next-env.d.ts
 
 /lib/generated/prisma
 
+# uploaded files (STORAGE_DIR)
+/storage
+
 # Cursor AI Rules & Framework
 .cursor/
 !.cursor/rules/
