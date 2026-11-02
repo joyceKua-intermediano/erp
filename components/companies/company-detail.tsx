@@ -18,6 +18,7 @@ import {
   StarIcon,
   Trash2Icon,
 } from "lucide-react"
+import { CompanyPortalAccountsCard } from "@/components/customer-accounts/company-portal-accounts-card"
 import { CompanyMark } from "@/components/intermediano-companies/company-mark"
 import { UserAvatar } from "@/components/user-avatar"
 import { Badge } from "@/components/ui/badge"
@@ -96,9 +97,18 @@ type CompanyDetailProps = {
   canManage: boolean
   canViewContacts: boolean
   canManageContacts: boolean
+  canViewPortalAccounts: boolean
+  canManagePortalAccounts: boolean
 }
 
-export function CompanyDetail({ companyId, canManage, canViewContacts, canManageContacts }: CompanyDetailProps) {
+export function CompanyDetail({
+  companyId,
+  canManage,
+  canViewContacts,
+  canManageContacts,
+  canViewPortalAccounts,
+  canManagePortalAccounts,
+}: CompanyDetailProps) {
   const { data: company, isPending, isError, refetch } = useCompany(companyId)
 
   if (isPending) return <Skeleton className="h-96 rounded-xl" />
@@ -111,6 +121,8 @@ export function CompanyDetail({ companyId, canManage, canViewContacts, canManage
       canManage={canManage}
       canViewContacts={canViewContacts}
       canManageContacts={canManageContacts}
+      canViewPortalAccounts={canViewPortalAccounts}
+      canManagePortalAccounts={canManagePortalAccounts}
     />
   )
 }
@@ -124,11 +136,15 @@ function CompanyDetailContent({
   canManage,
   canViewContacts,
   canManageContacts,
+  canViewPortalAccounts,
+  canManagePortalAccounts,
 }: {
   company: CompanyDetailData
   canManage: boolean
   canViewContacts: boolean
   canManageContacts: boolean
+  canViewPortalAccounts: boolean
+  canManagePortalAccounts: boolean
 }) {
   const router = useRouter()
   const [sheet, setSheet] = useState({ open: false, key: 0 })
@@ -223,6 +239,10 @@ function CompanyDetailContent({
 
         {canViewContacts && <ContactsCard company={company} canManage={canManageContacts} />}
       </div>
+
+      {canViewPortalAccounts && (
+        <CompanyPortalAccountsCard company={{ id: company.id, name: company.name }} canManage={canManagePortalAccounts} />
+      )}
 
       {canManage && (
         <>

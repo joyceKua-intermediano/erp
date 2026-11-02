@@ -26,7 +26,15 @@ export const pendingTimesheetWhere = {
 } satisfies Prisma.monthly_timesheetsWhereInput
 
 export function timesheetListWhere(companyId: bigint, query: TimesheetListQuery): Prisma.monthly_timesheetsWhereInput {
-  const filters: Prisma.monthly_timesheetsWhereInput[] = [clusterTimesheetsWhere(companyId)]
+  return scopedTimesheetListWhere(clusterTimesheetsWhere(companyId), query)
+}
+
+// `scope` limits the rows to what the signed-in user may see; the query only narrows it.
+export function scopedTimesheetListWhere(
+  scope: Prisma.monthly_timesheetsWhereInput,
+  query: TimesheetListQuery
+): Prisma.monthly_timesheetsWhereInput {
+  const filters: Prisma.monthly_timesheetsWhereInput[] = [scope]
   if (query.search) {
     filters.push({
       OR: [

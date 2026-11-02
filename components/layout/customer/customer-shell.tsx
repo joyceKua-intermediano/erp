@@ -8,7 +8,6 @@ import {
   FileSignatureIcon,
   LayoutDashboardIcon,
   PalmtreeIcon,
-  ReceiptTextIcon,
   WalletIcon,
 } from "lucide-react"
 import { cn } from "cn"
@@ -21,13 +20,17 @@ import { isActivePath, type NavItem } from "@/lib/navigation"
 const customerNavItems: NavItem[] = [
   { title: "Overview", href: "/customer/dashboard", icon: LayoutDashboardIcon },
   { title: "Contracts", href: "/customer/contracts", icon: FileSignatureIcon },
-  { title: "Invoices", href: "/customer/invoices", icon: ReceiptTextIcon },
   { title: "Timesheets", href: "/customer/timesheets", icon: CalendarClockIcon },
-  { title: "Expenses", href: "/customer/expenses", icon: WalletIcon },
   { title: "Vacations", href: "/customer/vacations", icon: PalmtreeIcon },
+  { title: "Expenses", href: "/customer/expenses", icon: WalletIcon },
 ]
 
-export function CustomerShell({ children }: { children: ReactNode }) {
+type CustomerShellProps = {
+  children: ReactNode
+  account?: ReactNode
+}
+
+export function CustomerShell({ children, account }: CustomerShellProps) {
   const pathname = usePathname()
 
   return (
@@ -37,7 +40,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
           <MobileNavSheet
             sheetId="customer-navigation"
             title="Client portal"
-            description="Contracts, invoices and approvals."
+            description="Contracts and approvals for your team."
             items={customerNavItems}
             className="lg:hidden"
           />
@@ -68,6 +71,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
           </nav>
           <div className="ml-auto flex items-center gap-1">
             <ThemeToggle />
+            {account}
           </div>
         </div>
       </header>

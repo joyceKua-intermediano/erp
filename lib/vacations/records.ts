@@ -21,7 +21,15 @@ export const pendingVacationWhere = {
 } satisfies Prisma.vacation_requestsWhereInput
 
 export function vacationListWhere(companyId: bigint, query: VacationListQuery): Prisma.vacation_requestsWhereInput {
-  const filters: Prisma.vacation_requestsWhereInput[] = [clusterVacationsWhere(companyId)]
+  return scopedVacationListWhere(clusterVacationsWhere(companyId), query)
+}
+
+// `scope` limits the rows to what the signed-in user may see; the query only narrows it.
+export function scopedVacationListWhere(
+  scope: Prisma.vacation_requestsWhereInput,
+  query: VacationListQuery
+): Prisma.vacation_requestsWhereInput {
+  const filters: Prisma.vacation_requestsWhereInput[] = [scope]
   if (query.search) {
     filters.push({
       OR: [{ employees: { name: { contains: query.search } } }, { companies: { name: { contains: query.search } } }],

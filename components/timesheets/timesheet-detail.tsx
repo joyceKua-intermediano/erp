@@ -111,7 +111,7 @@ function ClusterTimesheetDetail({
   )
 }
 
-function DailyHoursCard({ timesheet }: { timesheet: TimesheetDetail }) {
+export function DailyHoursCard({ timesheet }: { timesheet: TimesheetDetail }) {
   const firstWeekday = new Date(Date.UTC(timesheet.year, timesheet.month - 1, 1)).getUTCDay()
   const leadingBlanks = Number.isNaN(firstWeekday) ? 0 : firstWeekday
   const daysWorked = timesheet.days.filter((hours) => hours > 0).length

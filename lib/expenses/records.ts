@@ -23,7 +23,15 @@ export const pendingExpenseWhere = {
 } satisfies Prisma.employee_expensesWhereInput
 
 export function expenseListWhere(companyId: bigint, query: ExpenseListQuery): Prisma.employee_expensesWhereInput {
-  const filters: Prisma.employee_expensesWhereInput[] = [clusterExpensesWhere(companyId)]
+  return scopedExpenseListWhere(clusterExpensesWhere(companyId), query)
+}
+
+// `scope` limits the rows to what the signed-in user may see; the query only narrows it.
+export function scopedExpenseListWhere(
+  scope: Prisma.employee_expensesWhereInput,
+  query: ExpenseListQuery
+): Prisma.employee_expensesWhereInput {
+  const filters: Prisma.employee_expensesWhereInput[] = [scope]
   if (query.search) {
     filters.push({
       OR: [
