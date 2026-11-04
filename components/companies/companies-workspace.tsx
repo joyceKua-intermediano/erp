@@ -35,6 +35,7 @@ import { useCompanies } from "@/hooks/use-companies"
 import type { Company } from "@/lib/companies"
 import { ArchiveCompanyDialog } from "./archive-company-dialog"
 import { CompanyFormSheet } from "./company-form-sheet"
+import type { RecordPermissions } from "@/lib/permissions"
 
 type StatusFilter = "all" | "customers" | "prospects"
 
@@ -74,10 +75,10 @@ function filterChipClassName(isActive: boolean) {
 }
 
 type CompaniesWorkspaceProps = {
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function CompaniesWorkspace({ canManage }: CompaniesWorkspaceProps) {
+export function CompaniesWorkspace({ can }: CompaniesWorkspaceProps) {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [countryFilter, setCountryFilter] = useState<string | null>(null)
@@ -157,7 +158,7 @@ export function CompaniesWorkspace({ canManage }: CompaniesWorkspaceProps) {
                 className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
               />
             </div>
-            {canManage && (
+            {can.create && (
               <Button onClick={() => openSheet(null)}>
                 <PlusIcon />
                 Add company
@@ -343,12 +344,14 @@ export function CompaniesWorkspace({ canManage }: CompaniesWorkspaceProps) {
                               <EyeIcon />
                               View details
                             </DropdownMenuItem>
-                            {canManage && (
+                            {can.edit && (
+                              <DropdownMenuItem onClick={() => openSheet(company)}>
+                                <PencilIcon />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
+                            {can.delete && (
                               <>
-                                <DropdownMenuItem onClick={() => openSheet(company)}>
-                                  <PencilIcon />
-                                  Edit
-                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   variant="destructive"
@@ -371,20 +374,20 @@ export function CompaniesWorkspace({ canManage }: CompaniesWorkspaceProps) {
         </CardContent>
       </Card>
 
-      {canManage && (
-        <>
-          <CompanyFormSheet
-            open={sheet.open}
-            company={sheet.company}
-            formKey={sheet.key}
-            onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
-          />
-          <ArchiveCompanyDialog
-            open={archive.open}
-            company={archive.company}
-            onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
-          />
-        </>
+      {(can.create || can.edit) && (
+        <CompanyFormSheet
+          open={sheet.open}
+          company={sheet.company}
+          formKey={sheet.key}
+          onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
+        />
+      )}
+      {can.delete && (
+        <ArchiveCompanyDialog
+          open={archive.open}
+          company={archive.company}
+          onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
+        />
       )}
     </div>
   )

@@ -7,7 +7,7 @@ import { getUserAccess } from "./access"
 import { isClusterModuleKey, type ClusterModuleKey } from "./cluster-modules"
 import { canAccessCluster, clusterIdSchema } from "./clusters"
 import { env, isGoogleEnabled } from "./env"
-import { hasPermission, type PermissionName } from "./permissions"
+import { hasAnyPermission, type PermissionName } from "./permissions"
 import { prisma } from "./prisma"
 
 // How long a role or permission change can take to reach a signed-in session.
@@ -151,10 +151,11 @@ export async function getSessionUser(): Promise<Session["user"] | null> {
   }
 }
 
-export async function requirePermission(permission: PermissionName): Promise<Session> {
+// A list means any one of those permissions is enough.
+export async function requirePermission(permission: PermissionName | readonly PermissionName[]): Promise<Session> {
   const session = await requireAdminSession()
 
-  if (!hasPermission(session.user, permission)) {
+  if (!hasAnyPermission(session.user, typeof permission === "string" ? [permission] : permission)) {
     throw new Error("Forbidden")
   }
 
@@ -177,7 +178,7 @@ async function hasClusterModule(clusterId: bigint, module: ClusterModuleKey) {
 // Cluster data needs three checks: the module permission, access to that cluster, and the module being enabled there.
 export async function requireClusterPermission(
   clusterId: string,
-  permission: PermissionName
+  permission: PermissionName | readonly PermissionName[]
 ): Promise<{ session: Session; clusterId: bigint }> {
   const parsedClusterId = clusterIdSchema.safeParse(clusterId)
   if (!parsedClusterId.success) {
@@ -191,7 +192,7 @@ export async function requireClusterPermission(
   }
 
   const companyId = BigInt(parsedClusterId.data)
-  const [resource] = permission.split(".")
+  const [resource] = (typeof permission === "string" ? permission : permission[0]).split(".")
   if (isClusterModuleKey(resource) && !(await hasClusterModule(companyId, resource))) {
     throw new Error("Forbidden")
   }
@@ -202,7 +203,7 @@ export async function requireClusterPermission(
 // For modules that have no permission of their own, such as partner work inside Quotations.
 export async function requireClusterModule(
   clusterId: string,
-  permission: PermissionName,
+  permission: PermissionName | readonly PermissionName[],
   module: ClusterModuleKey
 ): Promise<{ session: Session; clusterId: bigint }> {
   const access = await requireClusterPermission(clusterId, permission)

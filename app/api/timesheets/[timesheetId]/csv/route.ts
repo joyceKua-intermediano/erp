@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/api/t
 
   let clusterId: bigint;
   try {
-    ({ clusterId } = await requireClusterPermission(request.nextUrl.searchParams.get("cluster") ?? "", "timesheets.view"));
+    ({ clusterId } = await requireClusterPermission(request.nextUrl.searchParams.get("cluster") ?? "", "timesheets.show"));
   } catch (error) {
     return Response.json({ error: "You can't view timesheets in this cluster." }, { status: authErrorStatus(error) });
   }

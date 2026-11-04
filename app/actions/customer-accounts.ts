@@ -21,8 +21,8 @@ import {
   type PasswordResetInput,
 } from "@/lib/customer-accounts";
 import { Prisma } from "@/lib/generated/prisma/client";
-import { MANAGE_USERS_PERMISSION } from "@/lib/permissions";
 import { pageArgs } from "@/lib/pagination";
+import type { PermissionName } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 // Laravel hashes with 12 rounds; matching it keeps sign-in time the same in both apps.
@@ -80,7 +80,7 @@ function accountListWhere(query: CustomerAccountListQuery): Prisma.customersWher
 }
 
 export async function getCustomerAccounts(query?: CustomerAccountListQuery): Promise<CustomerAccountList> {
-  await requirePermission("users.view");
+  await requirePermission("portal_accounts.list");
   const listQuery = customerAccountListQuerySchema.parse(query ?? {});
 
   try {
@@ -104,7 +104,7 @@ export async function getCustomerAccounts(query?: CustomerAccountListQuery): Pro
 }
 
 export async function getCompanyCustomerAccounts(companyId: string): Promise<CustomerAccount[]> {
-  await requirePermission("users.view");
+  await requirePermission("portal_accounts.list");
 
   const parsedId = companyIdSchema.safeParse(companyId);
   if (!parsedId.success) return [];
@@ -123,7 +123,7 @@ export async function getCompanyCustomerAccounts(companyId: string): Promise<Cus
 }
 
 export async function getCustomerAccountOptions(): Promise<CustomerAccountOptions> {
-  await requirePermission("users.view");
+  await requirePermission("portal_accounts.list");
 
   try {
     const [companies, partners] = await Promise.all([
@@ -148,9 +148,9 @@ export async function getCustomerAccountOptions(): Promise<CustomerAccountOption
   }
 }
 
-async function canManageAccounts() {
+async function canManageAccounts(permission: PermissionName) {
   try {
-    await requirePermission(MANAGE_USERS_PERMISSION);
+    await requirePermission(permission);
     return true;
   } catch {
     return false;
@@ -196,7 +196,7 @@ async function hashPassword(password: string) {
 }
 
 export async function createCustomerAccount(input: CustomerAccountCreateInput): Promise<ActionResult<CustomerAccount>> {
-  if (!(await canManageAccounts())) return { ok: false, error: "You don't have permission to add portal accounts." };
+  if (!(await canManageAccounts("portal_accounts.create"))) return { ok: false, error: "You don't have permission to add portal accounts." };
 
   const parsed = customerAccountCreateSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
@@ -231,7 +231,7 @@ export async function updateCustomerAccount(
   accountId: string,
   input: CustomerAccountFormInput,
 ): Promise<ActionResult<CustomerAccount>> {
-  if (!(await canManageAccounts())) return { ok: false, error: "You don't have permission to edit portal accounts." };
+  if (!(await canManageAccounts("portal_accounts.edit"))) return { ok: false, error: "You don't have permission to edit portal accounts." };
 
   const parsedId = customerAccountIdSchema.safeParse(accountId);
   if (!parsedId.success) return { ok: false, error: "Unknown portal account." };
@@ -265,7 +265,7 @@ export async function resetCustomerAccountPassword(
   accountId: string,
   input: PasswordResetInput,
 ): Promise<ActionResult<{ id: string }>> {
-  if (!(await canManageAccounts())) return { ok: false, error: "You don't have permission to reset passwords." };
+  if (!(await canManageAccounts("portal_accounts.edit"))) return { ok: false, error: "You don't have permission to reset passwords." };
 
   const parsedId = customerAccountIdSchema.safeParse(accountId);
   if (!parsedId.success) return { ok: false, error: "Unknown portal account." };
@@ -289,7 +289,7 @@ export async function resetCustomerAccountPassword(
 
 // Archiving signs the customer out of the portal within a minute, when their session is next re-checked.
 export async function archiveCustomerAccount(accountId: string): Promise<ActionResult<{ id: string }>> {
-  if (!(await canManageAccounts())) return { ok: false, error: "You don't have permission to archive portal accounts." };
+  if (!(await canManageAccounts("portal_accounts.delete"))) return { ok: false, error: "You don't have permission to archive portal accounts." };
 
   const parsedId = customerAccountIdSchema.safeParse(accountId);
   if (!parsedId.success) return { ok: false, error: "Unknown portal account." };
@@ -310,7 +310,7 @@ export async function archiveCustomerAccount(accountId: string): Promise<ActionR
 }
 
 export async function restoreCustomerAccount(accountId: string): Promise<ActionResult<{ id: string }>> {
-  if (!(await canManageAccounts())) return { ok: false, error: "You don't have permission to restore portal accounts." };
+  if (!(await canManageAccounts("portal_accounts.delete"))) return { ok: false, error: "You don't have permission to restore portal accounts." };
 
   const parsedId = customerAccountIdSchema.safeParse(accountId);
   if (!parsedId.success) return { ok: false, error: "Unknown portal account." };

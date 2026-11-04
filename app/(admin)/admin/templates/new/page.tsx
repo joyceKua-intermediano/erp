@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 
 async function NewTemplateSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "settings.manage")) {
-    return <AccessDenied message="Only people who can manage Configuration can create contract templates." />;
+  if (!user || !hasPermission(user, "templates.create")) {
+    return <AccessDenied message="Only people who can manage Contract templates can create them." />;
   }
 
-  return <TemplateEditor templateId={null} canManage />;
+  return <TemplateEditor templateId={null} canSave canArchive={false} />;
 }
 
 export default function NewTemplatePage() {

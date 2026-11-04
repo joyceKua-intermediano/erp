@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PartnersWorkspace } from "@/components/partners/partners-workspace";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, recordPermissions } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Partners",
@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 
 async function PartnersSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "partners.view")) {
+  if (!user || !hasPermission(user, "partners.list")) {
     return <AccessDenied message="Ask an administrator for access to Partners." />;
   }
 
-  return <PartnersWorkspace canManage={hasPermission(user, "partners.manage")} />;
+  return <PartnersWorkspace can={recordPermissions(user, "partners")} />;
 }
 
 export default function PartnersPage() {

@@ -13,6 +13,7 @@ import {
   type HolidaySetFormInput,
 } from "@/lib/holidays";
 import type { CountryOption } from "@/lib/intermediano-companies";
+import type { PermissionName } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 const holidaySetSelect = {
@@ -40,7 +41,7 @@ function toHolidaySet(row: HolidaySetRow): HolidaySet {
 }
 
 export async function getHolidaySets(): Promise<HolidaySet[]> {
-  await requirePermission("settings.view");
+  await requirePermission("holidays.list");
 
   try {
     const rows = await prisma.holidays.findMany({
@@ -56,7 +57,7 @@ export async function getHolidaySets(): Promise<HolidaySet[]> {
 }
 
 export async function getHolidayCountryOptions(): Promise<CountryOption[]> {
-  await requirePermission("settings.view");
+  await requirePermission("holidays.list");
 
   try {
     const countries = await prisma.countries.findMany({
@@ -71,9 +72,9 @@ export async function getHolidayCountryOptions(): Promise<CountryOption[]> {
   }
 }
 
-async function canManageHolidays() {
+async function canManageHolidays(permission: PermissionName) {
   try {
-    await requirePermission("settings.manage");
+    await requirePermission(permission);
     return true;
   } catch {
     return false;
@@ -85,7 +86,7 @@ function duplicateYearError(year: number) {
 }
 
 export async function createHolidaySet(input: HolidaySetFormInput): Promise<ActionResult<{ id: string }>> {
-  if (!(await canManageHolidays())) {
+  if (!(await canManageHolidays("holidays.create"))) {
     return { ok: false, error: "You don't have permission to add holidays." };
   }
 
@@ -137,7 +138,7 @@ export async function updateHolidaySet(
   holidaySetId: string,
   input: HolidaySetFormInput,
 ): Promise<ActionResult<{ id: string }>> {
-  if (!(await canManageHolidays())) {
+  if (!(await canManageHolidays("holidays.edit"))) {
     return { ok: false, error: "You don't have permission to edit holidays." };
   }
 
@@ -173,7 +174,7 @@ export async function updateHolidaySet(
 }
 
 export async function archiveHolidaySet(holidaySetId: string): Promise<ActionResult<{ id: string }>> {
-  if (!(await canManageHolidays())) {
+  if (!(await canManageHolidays("holidays.delete"))) {
     return { ok: false, error: "You don't have permission to archive holidays." };
   }
 

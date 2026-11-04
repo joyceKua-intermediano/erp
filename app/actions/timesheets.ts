@@ -24,7 +24,7 @@ import {
 } from "@/lib/timesheets/records";
 
 export async function getClusterTimesheets(clusterId: string, query?: TimesheetListQuery): Promise<ClusterTimesheets> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "timesheets.view");
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, "timesheets.list");
   const listQuery = timesheetListQuerySchema.parse(query ?? {});
 
   try {
@@ -54,7 +54,7 @@ export async function getClusterTimesheets(clusterId: string, query?: TimesheetL
 }
 
 export async function getTimesheet(clusterId: string, timesheetId: string): Promise<TimesheetDetail | null> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "timesheets.view");
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, "timesheets.show");
 
   const parsedId = timesheetIdSchema.safeParse(timesheetId);
   if (!parsedId.success) return null;
@@ -69,7 +69,7 @@ export async function getTimesheet(clusterId: string, timesheetId: string): Prom
 
 async function requireManageCluster(clusterId: string): Promise<bigint | null> {
   try {
-    const { clusterId: companyId } = await requireClusterPermission(clusterId, "timesheets.manage");
+    const { clusterId: companyId } = await requireClusterPermission(clusterId, "timesheets.edit");
     return companyId;
   } catch {
     return null;

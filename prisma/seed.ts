@@ -30,7 +30,7 @@ import {
   provisionTypes,
   quotations,
   roleClusters,
-  rolePermissions,
+  roleGrants,
   roles,
   socialSecurityInfos,
   staffTrackers,
@@ -101,17 +101,31 @@ async function main() {
         await seedStep("roles", roles, (row) =>
           tx.roles.upsert({ where: { id: row.id }, create: row, update: row }),
         )
-        await seedStep("permissions", permissions, (row) =>
-          tx.permissions.upsert({ where: { id: row.id }, create: row, update: row }),
-        )
-        for (const row of rolePermissions) {
-          await tx.role_permissions.upsert({
-            where: { role_id_permission_id: { role_id: row.role_id, permission_id: row.permission_id } },
+        const permissionIds = new Map<string, bigint>()
+        for (const row of permissions) {
+          const saved = await tx.permissions.upsert({
+            where: { name: row.name },
             create: row,
-            update: {},
+            update: row,
+            select: { id: true },
           })
+          permissionIds.set(row.name, saved.id)
         }
-        console.log(`  ${"role_permissions".padEnd(32)} ${rolePermissions.length}`)
+        console.log(`  ${"permissions".padEnd(32)} ${permissions.length}`)
+        let rolePermissionCount = 0
+        for (const grant of roleGrants) {
+          for (const name of grant.permissions) {
+            const permission_id = permissionIds.get(name)
+            if (permission_id === undefined) throw new Error(`Permission "${name}" was not seeded.`)
+            await tx.role_permissions.upsert({
+              where: { role_id_permission_id: { role_id: grant.role_id, permission_id } },
+              create: { role_id: grant.role_id, permission_id },
+              update: {},
+            })
+            rolePermissionCount++
+          }
+        }
+        console.log(`  ${"role_permissions".padEnd(32)} ${rolePermissionCount}`)
         await seedStep("users", users, (row) =>
           tx.users.upsert({ where: { id: row.id }, create: row, update: row }),
         )

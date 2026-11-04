@@ -16,13 +16,13 @@ export const instant = false;
 
 async function TimesheetDetailSlot({ params }: { params: PageProps<"/admin/timesheets/[timesheetId]">["params"] }) {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "timesheets.view")) {
+  if (!user || !hasPermission(user, "timesheets.show")) {
     return <AccessDenied message="Ask an administrator for access to Timesheets." />;
   }
 
   const { timesheetId } = await params;
 
-  return <TimesheetDetailView timesheetId={timesheetId} canManage={hasPermission(user, "timesheets.manage")} />;
+  return <TimesheetDetailView timesheetId={timesheetId} canManage={hasPermission(user, "timesheets.edit")} />;
 }
 
 export default function TimesheetDetailPage({ params }: PageProps<"/admin/timesheets/[timesheetId]">) {

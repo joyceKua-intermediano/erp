@@ -1,7 +1,7 @@
 import type { Session } from "next-auth";
 import { requireClusterPermission, requirePermission } from "@/lib/auth";
 import { authErrorStatus, pdfResponse, renderContractPdf } from "@/lib/contracts/render-pdf";
-import { hasPermission } from "@/lib/permissions";
+import { hasAnyPermission } from "@/lib/permissions";
 import { templatePreviewSchema, type TemplatePreviewContent } from "@/lib/templates";
 import { findVisibleTypstSource } from "@/lib/templates/records";
 
@@ -22,8 +22,8 @@ export async function POST(request: Request) {
   let session: Session;
   let clusterId: bigint;
   try {
-    session = await requirePermission("settings.view");
-    ({ clusterId } = await requireClusterPermission(requestedClusterId, "contracts.view"));
+    session = await requirePermission("templates.show");
+    ({ clusterId } = await requireClusterPermission(requestedClusterId, "contracts.show"));
   } catch (error) {
     return Response.json({ error: "You can't preview contracts in this cluster." }, { status: authErrorStatus(error) });
   }
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   let content: TemplatePreviewContent;
   if (parsed.data.mode === "blocks") {
     content = { mode: "blocks", document: parsed.data.document };
-  } else if (hasPermission(session.user, "settings.manage")) {
+  } else if (hasAnyPermission(session.user, ["templates.create", "templates.edit"])) {
     content = { mode: "code", source: parsed.data.source };
   } else {
     // Raw Typst runs on the server, so only template editors may preview code they wrote themselves.

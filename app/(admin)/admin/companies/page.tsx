@@ -5,7 +5,7 @@ import { CompaniesWorkspace } from "@/components/companies/companies-workspace";
 import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, recordPermissions } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Companies",
@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 
 async function CompaniesSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "companies.view")) {
+  if (!user || !hasPermission(user, "companies.list")) {
     return <AccessDenied message="Ask an administrator for access to Companies." />;
   }
 
-  return <CompaniesWorkspace canManage={hasPermission(user, "companies.manage")} />;
+  return <CompaniesWorkspace can={recordPermissions(user, "companies")} />;
 }
 
 export default function CompaniesPage() {

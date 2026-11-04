@@ -80,10 +80,11 @@ const templatesBackLink = (
 
 type TemplateEditorProps = {
   templateId: string | null
-  canManage: boolean
+  canSave: boolean
+  canArchive: boolean
 }
 
-export function TemplateEditor({ templateId, canManage }: TemplateEditorProps) {
+export function TemplateEditor({ templateId, canSave, canArchive }: TemplateEditorProps) {
   const { data: template, isPending, isError, refetch } = useTemplate(templateId)
 
   if (templateId && isPending) return <Skeleton className="h-[40rem] rounded-xl" />
@@ -119,7 +120,7 @@ export function TemplateEditor({ templateId, canManage }: TemplateEditorProps) {
     )
   }
 
-  return <TemplateEditorForm key={template?.id ?? "new"} template={template ?? null} canManage={canManage} />
+  return <TemplateEditorForm key={template?.id ?? "new"} template={template ?? null} canSave={canSave} canArchive={canArchive} />
 }
 
 function lineStartOffset(source: string, line: number) {
@@ -136,7 +137,15 @@ function initialDocument(template: ContractTemplateDetail | null): TemplateDocum
   return toDisplayDocument(template?.document ?? starterDocument())
 }
 
-function TemplateEditorForm({ template, canManage }: { template: ContractTemplateDetail | null; canManage: boolean }) {
+function TemplateEditorForm({
+  template,
+  canSave,
+  canArchive,
+}: {
+  template: ContractTemplateDetail | null
+  canSave: boolean
+  canArchive: boolean
+}) {
   const router = useRouter()
   const sourceRef = useRef<HTMLTextAreaElement>(null)
   const textTargetRef = useRef<TextTarget | null>(null)
@@ -154,7 +163,7 @@ function TemplateEditorForm({ template, canManage }: { template: ContractTemplat
   const clusters = useClusters()
   const samples = useSampleContracts()
   const saveTemplate = useSaveTemplate()
-  const readOnly = !canManage
+  const readOnly = !canSave
 
   const stored = useMemo(() => toStoredDocument(blocksDocument), [blocksDocument])
   const contentKey = JSON.stringify(
@@ -295,24 +304,26 @@ function TemplateEditorForm({ template, canManage }: { template: ContractTemplat
                 </Badge>
               )}
             </div>
-            {canManage && (
+            {(canSave || (canArchive && template)) && (
               <div className="flex flex-wrap gap-2">
-                {mode === "blocks" && (
+                {canSave && mode === "blocks" && (
                   <Button type="button" variant="ghost" onClick={() => setConvertOpen(true)}>
                     <CodeIcon />
                     Edit as code
                   </Button>
                 )}
-                {template && (
+                {canArchive && template && (
                   <Button type="button" variant="destructive" onClick={() => setArchiveOpen(true)}>
                     <ArchiveIcon />
                     Archive
                   </Button>
                 )}
-                <Button type="submit" disabled={saveTemplate.isPending}>
-                  {saveTemplate.isPending ? <Loader2Icon className="animate-spin" /> : <SaveIcon />}
-                  {template ? "Save changes" : "Create template"}
-                </Button>
+                {canSave && (
+                  <Button type="submit" disabled={saveTemplate.isPending}>
+                    {saveTemplate.isPending ? <Loader2Icon className="animate-spin" /> : <SaveIcon />}
+                    {template ? "Save changes" : "Create template"}
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -581,7 +592,7 @@ function TemplateEditorForm({ template, canManage }: { template: ContractTemplat
         </Card>
       </div>
 
-      {canManage && template && (
+      {canArchive && template && (
         <ArchiveTemplateDialog
           open={isArchiveOpen}
           template={template}

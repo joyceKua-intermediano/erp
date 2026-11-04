@@ -23,6 +23,7 @@ import {
 } from "@/lib/quotations"
 import { ArchiveQuotationDialog } from "./archive-quotation-dialog"
 import { QuotationFormSheet } from "./quotation-form-sheet"
+import type { RecordPermissions } from "@/lib/permissions"
 
 const quotationsBackLink = (
   <Link
@@ -69,10 +70,10 @@ function QuotationLoadError({ onRetry }: { onRetry: () => void }) {
 
 type QuotationDetailViewProps = {
   quotationId: string
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function QuotationDetailView({ quotationId, canManage }: QuotationDetailViewProps) {
+export function QuotationDetailView({ quotationId, can }: QuotationDetailViewProps) {
   const activeCluster = useActiveCluster()
 
   if (!activeCluster) {
@@ -87,7 +88,7 @@ export function QuotationDetailView({ quotationId, canManage }: QuotationDetailV
       key={activeCluster.id}
       quotationId={quotationId}
       clusterLabel={activeCluster.label}
-      canManage={canManage}
+      can={can}
     />
   )
 }
@@ -95,7 +96,7 @@ export function QuotationDetailView({ quotationId, canManage }: QuotationDetailV
 function ClusterQuotationDetail({
   quotationId,
   clusterLabel,
-  canManage,
+  can,
 }: QuotationDetailViewProps & { clusterLabel: string }) {
   const { data: quotation, isPending, isError, refetch } = useQuotation(quotationId)
 
@@ -103,7 +104,7 @@ function ClusterQuotationDetail({
   if (isError) return <QuotationLoadError onRetry={() => refetch()} />
   if (!quotation) return <QuotationNotFound clusterLabel={clusterLabel} />
 
-  return <QuotationDetailContent quotation={quotation} canManage={canManage} />
+  return <QuotationDetailContent quotation={quotation} can={can} />
 }
 
 export function BreakdownCard({ section, quotation }: { section: BreakdownSection; quotation: QuotationDetail }) {
@@ -171,12 +172,12 @@ export function quotationInputRows(quotation: QuotationDetail): [string, string]
   ]
 }
 
-function QuotationDetailContent({ quotation, canManage }: { quotation: QuotationDetail; canManage: boolean }) {
+function QuotationDetailContent({ quotation, can }: { quotation: QuotationDetail; can: RecordPermissions }) {
   const router = useRouter()
   const [sheet, setSheet] = useState({ open: false, key: 0 })
   const [isArchiveOpen, setArchiveOpen] = useState(false)
-  const canEdit = canManage && quotation.kind !== null
-  const canArchive = canManage && !quotation.isPartner
+  const canEdit = can.edit && quotation.kind !== null
+  const canArchive = can.delete && !quotation.isPartner
   const rate = Number(quotation.exchangeRate)
   const inputs = quotationInputRows(quotation)
 
@@ -269,7 +270,7 @@ function QuotationDetailContent({ quotation, canManage }: { quotation: Quotation
         </Card>
       </div>
 
-      {canManage && (
+      {(canEdit || canArchive) && (
         <>
           {canEdit && (
             <QuotationFormSheet

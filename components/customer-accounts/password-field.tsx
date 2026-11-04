@@ -5,7 +5,7 @@ import { EyeIcon, EyeOffIcon, WandSparklesIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { generatePassword, MIN_PASSWORD_LENGTH } from "@/lib/customer-accounts"
+import { generatePassword, MIN_PASSWORD_LENGTH } from "@/lib/passwords"
 
 type PasswordFieldProps = {
   id: string
@@ -13,10 +13,12 @@ type PasswordFieldProps = {
   value: string
   onChange: (value: string) => void
   errors?: string[]
+  // Who the admin shares the password with.
+  recipient?: string
 }
 
 // No email is sent, so the admin shares the password themselves; generating one shows it so it can be copied.
-export function PasswordField({ id, label, value, onChange, errors }: PasswordFieldProps) {
+export function PasswordField({ id, label, value, onChange, errors, recipient = "customer" }: PasswordFieldProps) {
   const [isVisible, setVisible] = useState(false)
 
   return (
@@ -57,7 +59,7 @@ export function PasswordField({ id, label, value, onChange, errors }: PasswordFi
         </Button>
       </div>
       <FieldDescription>
-        At least {MIN_PASSWORD_LENGTH} characters. Copy it now and share it with the customer; no email is sent.
+        At least {MIN_PASSWORD_LENGTH} characters. Copy it now and share it with the {recipient}; no email is sent.
       </FieldDescription>
       <FieldError errors={errors?.map((message) => ({ message }))} />
     </Field>

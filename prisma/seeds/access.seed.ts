@@ -1,9 +1,8 @@
 import type { Prisma } from "../../lib/generated/prisma/client"
-import { permissionNames } from "../../lib/permissions"
+import { permissionNames, type PermissionName } from "../../lib/permissions"
 import { ids, timestamps } from "./ids"
 
-export const permissions = permissionNames.map((name, index) => ({
-  id: BigInt(index + 1),
+export const permissions = permissionNames.map((name) => ({
   name,
   description: null,
   ...timestamps,
@@ -24,18 +23,24 @@ export const roleClusters = [
   { role_id: ids.role.sales, intermediano_company_id: ids.intermedianoCompany.colombia },
 ] satisfies Prisma.role_clustersCreateManyInput[]
 
-const salesPermissions = new Set([
-  "leads.view",
-  "leads.manage",
-  "companies.view",
-  "contacts.view",
-  "quotations.view",
-  "quotations.manage",
-])
+const salesPermissions: PermissionName[] = [
+  "leads.list",
+  "leads.show",
+  "leads.create",
+  "leads.edit",
+  "leads.delete",
+  "companies.list",
+  "companies.show",
+  "contacts.list",
+  "quotations.list",
+  "quotations.show",
+  "quotations.create",
+  "quotations.edit",
+  "quotations.delete",
+]
 
-export const rolePermissions = [
-  ...permissions.map((permission) => ({ role_id: ids.role.admin, permission_id: permission.id })),
-  ...permissions
-    .filter((permission) => salesPermissions.has(permission.name))
-    .map((permission) => ({ role_id: ids.role.sales, permission_id: permission.id })),
-] satisfies Prisma.role_permissionsCreateManyInput[]
+// Permission ids come from the database, so grants are listed by name and resolved while seeding.
+export const roleGrants: { role_id: bigint; permissions: readonly PermissionName[] }[] = [
+  { role_id: ids.role.admin, permissions: permissionNames },
+  { role_id: ids.role.sales, permissions: salesPermissions },
+]

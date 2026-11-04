@@ -16,13 +16,19 @@ export const instant = false;
 
 async function TemplateSlot({ params }: { params: PageProps<"/admin/templates/[templateId]">["params"] }) {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "settings.view")) {
-    return <AccessDenied message="Ask an administrator for access to Configuration." />;
+  if (!user || !hasPermission(user, "templates.show")) {
+    return <AccessDenied message="Ask an administrator for access to Contract templates." />;
   }
 
   const { templateId } = await params;
 
-  return <TemplateEditor templateId={templateId} canManage={hasPermission(user, "settings.manage")} />;
+  return (
+    <TemplateEditor
+      templateId={templateId}
+      canSave={hasPermission(user, "templates.edit")}
+      canArchive={hasPermission(user, "templates.delete")}
+    />
+  );
 }
 
 export default function TemplatePage({ params }: PageProps<"/admin/templates/[templateId]">) {

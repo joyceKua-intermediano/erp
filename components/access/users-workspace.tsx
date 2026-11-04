@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useUsers } from "@/hooks/use-users"
-import { ADMIN_ROLE_NAME } from "@/lib/permissions"
+import { ADMIN_ROLE_NAME , type RecordPermissions } from "@/lib/permissions"
 import type { AdminUser } from "@/lib/users"
 import { RevokeAccessDialog } from "./revoke-access-dialog"
 import { UserAvatar } from "@/components/user-avatar"
@@ -56,11 +56,11 @@ function matchesRole(user: AdminUser, roleFilter: string | null) {
 }
 
 type UsersWorkspaceProps = {
-  canManage: boolean
+  can: RecordPermissions
   currentUserId: string
 }
 
-export function UsersWorkspace({ canManage, currentUserId }: UsersWorkspaceProps) {
+export function UsersWorkspace({ can, currentUserId }: UsersWorkspaceProps) {
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState<string | null>(null)
   const [sheet, setSheet] = useState<{ open: boolean; user: AdminUser | null; key: number }>({
@@ -132,7 +132,7 @@ export function UsersWorkspace({ canManage, currentUserId }: UsersWorkspaceProps
                 className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
               />
             </div>
-            {canManage && (
+            {can.create && (
               <Button onClick={() => openSheet(null)}>
                 <PlusIcon />
                 Add user
@@ -269,7 +269,7 @@ export function UsersWorkspace({ canManage, currentUserId }: UsersWorkspaceProps
                           {formatDate(user.createdAt)}
                         </TableCell>
                         <TableCell className="pr-6 text-right">
-                          {canManage && (
+                          {(can.edit || can.delete) && (
                             <DropdownMenu>
                               <DropdownMenuTrigger
                                 render={
@@ -279,13 +279,15 @@ export function UsersWorkspace({ canManage, currentUserId }: UsersWorkspaceProps
                                 }
                               />
                               <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuItem onClick={() => openSheet(user)}>
-                                  <PencilIcon />
-                                  {user.roleId ? "Edit" : "Restore access"}
-                                </DropdownMenuItem>
-                                {user.roleId && (
+                                {can.edit && (
+                                  <DropdownMenuItem onClick={() => openSheet(user)}>
+                                    <PencilIcon />
+                                    {user.roleId ? "Edit" : "Restore access"}
+                                  </DropdownMenuItem>
+                                )}
+                                {can.delete && user.roleId && (
                                   <>
-                                    <DropdownMenuSeparator />
+                                    {can.edit && <DropdownMenuSeparator />}
                                     <DropdownMenuItem
                                       variant="destructive"
                                       disabled={isSelf}
@@ -313,20 +315,20 @@ export function UsersWorkspace({ canManage, currentUserId }: UsersWorkspaceProps
         </CardFooter>
       </Card>
 
-      {canManage && (
-        <>
-          <UserFormSheet
-            open={sheet.open}
-            user={sheet.user}
-            formKey={sheet.key}
-            onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
-          />
-          <RevokeAccessDialog
-            open={revoke.open}
-            user={revoke.user}
-            onOpenChange={(open) => setRevoke((current) => ({ ...current, open }))}
-          />
-        </>
+      {(can.create || can.edit) && (
+        <UserFormSheet
+          open={sheet.open}
+          user={sheet.user}
+          formKey={sheet.key}
+          onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
+        />
+      )}
+      {can.delete && (
+        <RevokeAccessDialog
+          open={revoke.open}
+          user={revoke.user}
+          onOpenChange={(open) => setRevoke((current) => ({ ...current, open }))}
+        />
       )}
     </div>
   )

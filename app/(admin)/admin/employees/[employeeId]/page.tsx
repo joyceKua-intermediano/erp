@@ -5,7 +5,7 @@ import { EmployeeDetailView } from "@/components/employees/employee-detail";
 import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, recordPermissions } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Employee",
@@ -16,13 +16,13 @@ export const instant = false;
 
 async function EmployeeSlot({ params }: { params: PageProps<"/admin/employees/[employeeId]">["params"] }) {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "employees.view")) {
+  if (!user || !hasPermission(user, "employees.show")) {
     return <AccessDenied message="Ask an administrator for access to Employees." />;
   }
 
   const { employeeId } = await params;
 
-  return <EmployeeDetailView employeeId={employeeId} canManage={hasPermission(user, "employees.manage")} />;
+  return <EmployeeDetailView employeeId={employeeId} can={recordPermissions(user, "employees")} />;
 }
 
 export default function EmployeePage({ params }: PageProps<"/admin/employees/[employeeId]">) {

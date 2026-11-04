@@ -1,0 +1,11 @@
+{
+  "name": "intermediano-erp-demo-deck",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build-deck.mjs"
+  },
+  "dependencies": {
+    "pptxgenjs": "^3.12.0"
+  }
+}

@@ -5,11 +5,14 @@ import {
   getClusterEmployees,
   getConsultantOptions,
   getEmployee,
+  getEmployeeProfile,
+  resetEmployeePassword,
   updateEmployee,
 } from "@/app/actions/employees"
 import { unwrapActionResult } from "@/lib/action-result"
 import type { ClusterId } from "@/lib/clusters"
 import type { EmployeeFormInput, EmployeeListQuery } from "@/lib/employees"
+import type { PasswordResetInput } from "@/lib/passwords"
 import { useUiStore } from "@/store/use-ui-store"
 import { clusterQueryKeys } from "./use-clusters"
 
@@ -35,6 +38,15 @@ export function useEmployee(employeeId: string) {
   return useQuery({
     queryKey: employeeQueryKeys.detail(activeCluster, employeeId),
     queryFn: activeCluster ? () => getEmployee(activeCluster, employeeId) : skipToken,
+  })
+}
+
+export function useEmployeeProfile(employeeId: string) {
+  const activeCluster = useUiStore((state) => state.activeCluster)
+
+  return useQuery({
+    queryKey: [...employeeQueryKeys.detail(activeCluster, employeeId), "profile"] as const,
+    queryFn: activeCluster ? () => getEmployeeProfile(activeCluster, employeeId) : skipToken,
   })
 }
 
@@ -72,14 +84,33 @@ export function useSaveEmployee() {
   const invalidate = useInvalidateEmployees()
 
   return useMutation({
-    mutationFn: async ({ employeeId, input }: { employeeId: string | null; input: EmployeeFormInput }) => {
+    mutationFn: async ({
+      employeeId,
+      input,
+      password,
+    }: {
+      employeeId: string | null
+      input: EmployeeFormInput
+      password: string
+    }) => {
       const clusterId = requireActiveCluster(activeCluster)
       const data = unwrapActionResult(
-        employeeId ? await updateEmployee(clusterId, employeeId, input) : await createEmployee(clusterId, input)
+        employeeId
+          ? await updateEmployee(clusterId, employeeId, input)
+          : await createEmployee(clusterId, { employee: input, password })
       )
       return { ...data, clusterId }
     },
     onSuccess: ({ clusterId }) => invalidate(clusterId),
+  })
+}
+
+export function useResetEmployeePassword() {
+  const activeCluster = useUiStore((state) => state.activeCluster)
+
+  return useMutation({
+    mutationFn: async ({ employeeId, input }: { employeeId: string; input: PasswordResetInput }) =>
+      unwrapActionResult(await resetEmployeePassword(requireActiveCluster(activeCluster), employeeId, input)),
   })
 }
 

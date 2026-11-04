@@ -18,7 +18,7 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/api/p
   let where: { id: bigint; employee_id?: bigint; employees?: { intermediano_company_id: bigint } };
   try {
     if (clusterParam !== null) {
-      const { clusterId } = await requireClusterModule(clusterParam, "payroll.view", "payslips");
+      const { clusterId } = await requireClusterModule(clusterParam, "payslips.show", "payslips");
       where = { id: BigInt(parsedId.data), ...clusterPayslipsWhere(clusterId) };
     } else {
       const { employeeId } = await requireEmployeeSession();

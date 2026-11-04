@@ -13,6 +13,7 @@ import { usePartner } from "@/hooks/use-partners"
 import { isPartnerType, partnerTypeLabel, type Partner } from "@/lib/partners"
 import { ArchivePartnerDialog } from "./archive-partner-dialog"
 import { PartnerFormSheet } from "./partner-form-sheet"
+import type { RecordPermissions } from "@/lib/permissions"
 
 const dateFormatter = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" })
 
@@ -70,20 +71,20 @@ function PartnerLoadError({ onRetry }: { onRetry: () => void }) {
 
 type PartnerDetailProps = {
   partnerId: string
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function PartnerDetail({ partnerId, canManage }: PartnerDetailProps) {
+export function PartnerDetail({ partnerId, can }: PartnerDetailProps) {
   const { data: partner, isPending, isError, refetch } = usePartner(partnerId)
 
   if (isPending) return <Skeleton className="h-96 rounded-xl" />
   if (isError) return <PartnerLoadError onRetry={() => refetch()} />
   if (!partner) return <PartnerNotFound />
 
-  return <PartnerDetailContent partner={partner} canManage={canManage} />
+  return <PartnerDetailContent partner={partner} can={can} />
 }
 
-function PartnerDetailContent({ partner, canManage }: { partner: Partner; canManage: boolean }) {
+function PartnerDetailContent({ partner, can }: { partner: Partner; can: RecordPermissions }) {
   const router = useRouter()
   const [sheet, setSheet] = useState({ open: false, key: 0 })
   const [isArchiveOpen, setArchiveOpen] = useState(false)
@@ -115,16 +116,20 @@ function PartnerDetailContent({ partner, canManage }: { partner: Partner; canMan
               </div>
             </div>
           </div>
-          {canManage && (
+          {(can.edit || can.delete) && (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setSheet((current) => ({ open: true, key: current.key + 1 }))}>
-                <PencilIcon />
-                Edit
-              </Button>
-              <Button variant="destructive" onClick={() => setArchiveOpen(true)}>
-                <ArchiveIcon />
-                Archive
-              </Button>
+              {can.edit && (
+                <Button variant="outline" onClick={() => setSheet((current) => ({ open: true, key: current.key + 1 }))}>
+                  <PencilIcon />
+                  Edit
+                </Button>
+              )}
+              {can.delete && (
+                <Button variant="destructive" onClick={() => setArchiveOpen(true)}>
+                  <ArchiveIcon />
+                  Archive
+                </Button>
+              )}
             </div>
           )}
         </CardContent>
@@ -182,21 +187,21 @@ function PartnerDetailContent({ partner, canManage }: { partner: Partner; canMan
         </Card>
       </div>
 
-      {canManage && (
-        <>
-          <PartnerFormSheet
-            open={sheet.open}
-            partner={partner}
-            formKey={sheet.key}
-            onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
-          />
-          <ArchivePartnerDialog
-            open={isArchiveOpen}
-            partner={partner}
-            onOpenChange={setArchiveOpen}
-            onArchived={() => router.push("/admin/partners")}
-          />
-        </>
+      {can.edit && (
+        <PartnerFormSheet
+          open={sheet.open}
+          partner={partner}
+          formKey={sheet.key}
+          onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
+        />
+      )}
+      {can.delete && (
+        <ArchivePartnerDialog
+          open={isArchiveOpen}
+          partner={partner}
+          onOpenChange={setArchiveOpen}
+          onArchived={() => router.push("/admin/partners")}
+        />
       )}
     </div>
   )

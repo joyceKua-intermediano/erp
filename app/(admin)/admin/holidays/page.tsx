@@ -5,7 +5,7 @@ import { HolidaysWorkspace } from "@/components/holidays/holidays-workspace";
 import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, recordPermissions } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Holidays",
@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 
 async function HolidaysSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "settings.view")) {
-    return <AccessDenied message="Ask an administrator for access to Configuration." />;
+  if (!user || !hasPermission(user, "holidays.list")) {
+    return <AccessDenied message="Ask an administrator for access to Holidays." />;
   }
 
-  return <HolidaysWorkspace canManage={hasPermission(user, "settings.manage")} />;
+  return <HolidaysWorkspace can={recordPermissions(user, "holidays")} />;
 }
 
 export default function HolidaysPage() {

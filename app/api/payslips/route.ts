@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   try {
     ({ clusterId } = await requireClusterModule(
       request.nextUrl.searchParams.get("cluster") ?? "",
-      "payroll.manage",
+      "payslips.create",
       "payslips",
     ));
   } catch (error) {

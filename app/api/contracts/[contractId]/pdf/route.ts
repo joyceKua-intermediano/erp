@@ -9,7 +9,7 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/api/c
 
   let clusterId: bigint;
   try {
-    ({ clusterId } = await requireClusterPermission(searchParams.get("cluster") ?? "", "contracts.view"));
+    ({ clusterId } = await requireClusterPermission(searchParams.get("cluster") ?? "", "contracts.show"));
   } catch (error) {
     return Response.json({ error: "You can't view contracts in this cluster." }, { status: authErrorStatus(error) });
   }

@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PayrollWorkspace } from "@/components/payroll/payroll-workspace";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, recordPermissions } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Payroll",
@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 
 async function PayrollSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "payroll.view")) {
+  if (!user || !hasPermission(user, "payroll.list")) {
     return <AccessDenied message="Ask an administrator for access to Payroll." />;
   }
 
-  return <PayrollWorkspace canManage={hasPermission(user, "payroll.manage")} />;
+  return <PayrollWorkspace can={recordPermissions(user, "payroll")} />;
 }
 
 export default function PayrollPage() {

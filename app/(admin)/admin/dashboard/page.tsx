@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 async function EmployeesSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "employees.view")) {
+  if (!user || !hasPermission(user, "employees.list")) {
     return <AccessDenied message="Ask an administrator for access to Employees." />;
   }
 

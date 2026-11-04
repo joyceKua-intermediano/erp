@@ -4,7 +4,7 @@ import { AccessDenied } from "@/components/access-denied";
 import { UsersWorkspace } from "@/components/access/users-workspace";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, recordPermissions } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Users",
@@ -12,11 +12,11 @@ export const metadata: Metadata = {
 
 async function UsersSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "users.view")) {
+  if (!user || !hasPermission(user, "users.list")) {
     return <AccessDenied message="Ask an administrator for access to Users & roles." />;
   }
 
-  return <UsersWorkspace canManage={hasPermission(user, "users.manage")} currentUserId={user.id} />;
+  return <UsersWorkspace can={recordPermissions(user, "users")} currentUserId={user.id} />;
 }
 
 export default function UsersPage() {

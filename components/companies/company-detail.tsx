@@ -38,6 +38,7 @@ import { ArchiveCompanyDialog } from "./archive-company-dialog"
 import { CompanyFormSheet } from "./company-form-sheet"
 import { ContactFormSheet } from "./contact-form-sheet"
 import { RemoveContactDialog } from "./remove-contact-dialog"
+import type { RecordPermissions } from "@/lib/permissions"
 
 const dateFormatter = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" })
 const numberFormatter = new Intl.NumberFormat("en")
@@ -94,20 +95,20 @@ function CompanyLoadError({ onRetry }: { onRetry: () => void }) {
 
 type CompanyDetailProps = {
   companyId: string
-  canManage: boolean
+  can: RecordPermissions
   canViewContacts: boolean
-  canManageContacts: boolean
+  contacts: RecordPermissions
   canViewPortalAccounts: boolean
-  canManagePortalAccounts: boolean
+  portalAccounts: RecordPermissions
 }
 
 export function CompanyDetail({
   companyId,
-  canManage,
+  can,
   canViewContacts,
-  canManageContacts,
+  contacts,
   canViewPortalAccounts,
-  canManagePortalAccounts,
+  portalAccounts,
 }: CompanyDetailProps) {
   const { data: company, isPending, isError, refetch } = useCompany(companyId)
 
@@ -118,11 +119,11 @@ export function CompanyDetail({
   return (
     <CompanyDetailContent
       company={company}
-      canManage={canManage}
+      can={can}
       canViewContacts={canViewContacts}
-      canManageContacts={canManageContacts}
+      contacts={contacts}
       canViewPortalAccounts={canViewPortalAccounts}
-      canManagePortalAccounts={canManagePortalAccounts}
+      portalAccounts={portalAccounts}
     />
   )
 }
@@ -133,18 +134,18 @@ function websiteHref(website: string) {
 
 function CompanyDetailContent({
   company,
-  canManage,
+  can,
   canViewContacts,
-  canManageContacts,
+  contacts,
   canViewPortalAccounts,
-  canManagePortalAccounts,
+  portalAccounts,
 }: {
   company: CompanyDetailData
-  canManage: boolean
+  can: RecordPermissions
   canViewContacts: boolean
-  canManageContacts: boolean
+  contacts: RecordPermissions
   canViewPortalAccounts: boolean
-  canManagePortalAccounts: boolean
+  portalAccounts: RecordPermissions
 }) {
   const router = useRouter()
   const [sheet, setSheet] = useState({ open: false, key: 0 })
@@ -186,16 +187,20 @@ function CompanyDetailContent({
               </div>
             </div>
           </div>
-          {canManage && (
+          {(can.edit || can.delete) && (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setSheet((current) => ({ open: true, key: current.key + 1 }))}>
-                <PencilIcon />
-                Edit
-              </Button>
-              <Button variant="destructive" onClick={() => setArchiveOpen(true)}>
-                <ArchiveIcon />
-                Archive
-              </Button>
+              {can.edit && (
+                <Button variant="outline" onClick={() => setSheet((current) => ({ open: true, key: current.key + 1 }))}>
+                  <PencilIcon />
+                  Edit
+                </Button>
+              )}
+              {can.delete && (
+                <Button variant="destructive" onClick={() => setArchiveOpen(true)}>
+                  <ArchiveIcon />
+                  Archive
+                </Button>
+              )}
             </div>
           )}
         </CardContent>
@@ -237,34 +242,34 @@ function CompanyDetailContent({
           </dl>
         </Card>
 
-        {canViewContacts && <ContactsCard company={company} canManage={canManageContacts} />}
+        {canViewContacts && <ContactsCard company={company} can={contacts} />}
       </div>
 
       {canViewPortalAccounts && (
-        <CompanyPortalAccountsCard company={{ id: company.id, name: company.name }} canManage={canManagePortalAccounts} />
+        <CompanyPortalAccountsCard company={{ id: company.id, name: company.name }} can={portalAccounts} />
       )}
 
-      {canManage && (
-        <>
-          <CompanyFormSheet
-            open={sheet.open}
-            company={company}
-            formKey={sheet.key}
-            onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
-          />
-          <ArchiveCompanyDialog
-            open={isArchiveOpen}
-            company={company}
-            onOpenChange={setArchiveOpen}
-            onArchived={() => router.push("/admin/companies")}
-          />
-        </>
+      {can.edit && (
+        <CompanyFormSheet
+          open={sheet.open}
+          company={company}
+          formKey={sheet.key}
+          onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
+        />
+      )}
+      {can.delete && (
+        <ArchiveCompanyDialog
+          open={isArchiveOpen}
+          company={company}
+          onOpenChange={setArchiveOpen}
+          onArchived={() => router.push("/admin/companies")}
+        />
       )}
     </div>
   )
 }
 
-function ContactsCard({ company, canManage }: { company: CompanyDetailData; canManage: boolean }) {
+function ContactsCard({ company, can }: { company: CompanyDetailData; can: RecordPermissions }) {
   const [sheet, setSheet] = useState<{ open: boolean; contact: CompanyContact | null; key: number }>({
     open: false,
     contact: null,
@@ -291,7 +296,7 @@ function ContactsCard({ company, canManage }: { company: CompanyDetailData; canM
               : `${company.contacts.length} ${company.contacts.length === 1 ? "person" : "people"} at this company.`}
           </CardDescription>
         </div>
-        {canManage && (
+        {can.create && (
           <Button size="sm" variant="outline" onClick={() => openSheet(null)}>
             <PlusIcon />
             Add
@@ -360,7 +365,7 @@ function ContactsCard({ company, canManage }: { company: CompanyDetailData; canM
                 )}
               </div>
             </div>
-            {canManage && (
+            {(can.edit || can.delete) && (
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={
@@ -370,11 +375,13 @@ function ContactsCard({ company, canManage }: { company: CompanyDetailData; canM
                   }
                 />
                 <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem onClick={() => openSheet(contact)}>
-                    <PencilIcon />
-                    Edit
-                  </DropdownMenuItem>
-                  {!contact.isMainContact && (
+                  {can.edit && (
+                    <DropdownMenuItem onClick={() => openSheet(contact)}>
+                      <PencilIcon />
+                      Edit
+                    </DropdownMenuItem>
+                  )}
+                  {can.edit && !contact.isMainContact && (
                     <DropdownMenuItem
                       disabled={setMainContact.isPending}
                       onClick={() => setMainContact.mutate(contact.id)}
@@ -383,11 +390,13 @@ function ContactsCard({ company, canManage }: { company: CompanyDetailData; canM
                       Set as main
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" onClick={() => setRemoval({ open: true, contact })}>
-                    <Trash2Icon />
-                    Remove
-                  </DropdownMenuItem>
+                  {can.edit && can.delete && <DropdownMenuSeparator />}
+                  {can.delete && (
+                    <DropdownMenuItem variant="destructive" onClick={() => setRemoval({ open: true, contact })}>
+                      <Trash2Icon />
+                      Remove
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -395,23 +404,23 @@ function ContactsCard({ company, canManage }: { company: CompanyDetailData; canM
         ))}
       </ul>
 
-      {canManage && (
-        <>
-          <ContactFormSheet
-            open={sheet.open}
-            companyId={company.id}
-            companyName={company.name}
-            contact={sheet.contact}
-            formKey={sheet.key}
-            onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
-          />
-          <RemoveContactDialog
-            open={removal.open}
-            companyId={company.id}
-            contact={removal.contact}
-            onOpenChange={(open) => setRemoval((current) => ({ ...current, open }))}
-          />
-        </>
+      {(can.create || can.edit) && (
+        <ContactFormSheet
+          open={sheet.open}
+          companyId={company.id}
+          companyName={company.name}
+          contact={sheet.contact}
+          formKey={sheet.key}
+          onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
+        />
+      )}
+      {can.delete && (
+        <RemoveContactDialog
+          open={removal.open}
+          companyId={company.id}
+          contact={removal.contact}
+          onOpenChange={(open) => setRemoval((current) => ({ ...current, open }))}
+        />
       )}
     </Card>
   )

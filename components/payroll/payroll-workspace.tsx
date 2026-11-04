@@ -39,6 +39,7 @@ import type { PayrollListItem } from "@/lib/payroll"
 import { formatAmount, formatQuotationTitle } from "@/lib/quotations"
 import { ArchivePayrollDialog } from "./archive-payroll-dialog"
 import { PayrollFormSheet } from "./payroll-form-sheet"
+import type { RecordPermissions } from "@/lib/permissions"
 
 const CHOOSE_CLUSTER_DESCRIPTION = "Payroll is scoped to one Intermediano legal entity at a time."
 
@@ -69,10 +70,10 @@ function PayrollTotal({ payroll }: { payroll: PayrollListItem }) {
 }
 
 type PayrollWorkspaceProps = {
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function PayrollWorkspace({ canManage }: PayrollWorkspaceProps) {
+export function PayrollWorkspace({ can }: PayrollWorkspaceProps) {
   const activeCluster = useActiveCluster()
 
   if (!activeCluster) return <ChooseClusterCard description={CHOOSE_CLUSTER_DESCRIPTION} />
@@ -80,10 +81,10 @@ export function PayrollWorkspace({ canManage }: PayrollWorkspaceProps) {
     return <ModuleDisabledCard module="payroll" clusterLabel={activeCluster.label} />
   }
 
-  return <ClusterPayrollPanel key={activeCluster.id} clusterLabel={activeCluster.label} canManage={canManage} />
+  return <ClusterPayrollPanel key={activeCluster.id} clusterLabel={activeCluster.label} can={can} />
 }
 
-function ClusterPayrollPanel({ clusterLabel, canManage }: { clusterLabel: string; canManage: boolean }) {
+function ClusterPayrollPanel({ clusterLabel, can }: { clusterLabel: string; can: RecordPermissions }) {
   const [search, setSearch] = useState("")
   const [month, setMonth] = useState("")
   const [consultantFilter, setConsultantFilter] = useState(ALL_CONSULTANTS)
@@ -177,7 +178,7 @@ function ClusterPayrollPanel({ clusterLabel, canManage }: { clusterLabel: string
                 className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
               />
             </div>
-            {canManage && isPorted && (
+            {can.create && isPorted && (
               <Button onClick={() => setSheet((current) => ({ open: true, key: current.key + 1 }))}>
                 <PlusIcon />
                 Add payroll
@@ -350,7 +351,7 @@ function ClusterPayrollPanel({ clusterLabel, canManage }: { clusterLabel: string
                               <EyeIcon />
                               View payroll
                             </DropdownMenuItem>
-                            {canManage && (
+                            {can.delete && (
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
@@ -375,23 +376,21 @@ function ClusterPayrollPanel({ clusterLabel, canManage }: { clusterLabel: string
         </CardContent>
       </Card>
 
-      {canManage && (
-        <>
-          {isPorted && (
-            <PayrollFormSheet
-              open={sheet.open}
-              payroll={null}
-              clusterLabel={clusterLabel}
-              formKey={sheet.key}
-              onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
-            />
-          )}
-          <ArchivePayrollDialog
-            open={archive.open}
-            payroll={archive.payroll}
-            onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
-          />
-        </>
+      {can.create && isPorted && (
+        <PayrollFormSheet
+          open={sheet.open}
+          payroll={null}
+          clusterLabel={clusterLabel}
+          formKey={sheet.key}
+          onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
+        />
+      )}
+      {can.delete && (
+        <ArchivePayrollDialog
+          open={archive.open}
+          payroll={archive.payroll}
+          onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
+        />
       )}
     </div>
   )

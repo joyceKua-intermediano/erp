@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PayslipWorkspace } from "@/components/payslips/payslip-workspace";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, recordPermissions } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Payslips",
@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 
 async function PayslipsSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "payroll.view")) {
-    return <AccessDenied message="Ask an administrator for access to Payroll." />;
+  if (!user || !hasPermission(user, "payslips.list")) {
+    return <AccessDenied message="Ask an administrator for access to Payslips." />;
   }
 
-  return <PayslipWorkspace canManage={hasPermission(user, "payroll.manage")} />;
+  return <PayslipWorkspace can={recordPermissions(user, "payslips")} canDownload={hasPermission(user, "payslips.show")} />;
 }
 
 export default function PayslipsPage() {

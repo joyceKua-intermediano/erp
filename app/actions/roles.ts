@@ -3,7 +3,7 @@
 import type { ActionResult } from "@/lib/action-result";
 import { requirePermission } from "@/lib/auth";
 import { Prisma } from "@/lib/generated/prisma/client";
-import { ADMIN_ROLE_NAME, MANAGE_USERS_PERMISSION, type PermissionName } from "@/lib/permissions";
+import { ADMIN_ROLE_NAME, EDIT_USERS_PERMISSION, type PermissionName } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import {
   roleFormSchema,
@@ -71,9 +71,9 @@ async function findPermissionIds(names: PermissionName[]) {
   return rows.length === unique.length ? rows.map((row) => row.id) : null;
 }
 
-async function requireManageSession() {
+async function requireManageSession(permission: PermissionName) {
   try {
-    const session = await requirePermission(MANAGE_USERS_PERMISSION);
+    const session = await requirePermission(permission);
     return session.user.id;
   } catch {
     return null;
@@ -81,7 +81,7 @@ async function requireManageSession() {
 }
 
 export async function getRoles(): Promise<RoleSummary[]> {
-  await requirePermission("users.view");
+  await requirePermission("users.list");
 
   try {
     const roles = await prisma.roles.findMany({ orderBy: { name: "asc" }, select: roleSelect });
@@ -93,7 +93,7 @@ export async function getRoles(): Promise<RoleSummary[]> {
 }
 
 export async function getRole(roleId: string): Promise<RoleDetail | null> {
-  await requirePermission("users.view");
+  await requirePermission("users.list");
 
   const parsedId = roleIdSchema.safeParse(roleId);
   if (!parsedId.success) return null;
@@ -119,7 +119,7 @@ export async function getRole(roleId: string): Promise<RoleDetail | null> {
 }
 
 export async function createRole(input: RoleFormInput): Promise<ActionResult<RoleSummary>> {
-  if (!(await requireManageSession())) {
+  if (!(await requireManageSession("users.create"))) {
     return { ok: false, error: "You don't have permission to create roles." };
   }
 
@@ -161,7 +161,7 @@ export async function createRole(input: RoleFormInput): Promise<ActionResult<Rol
 }
 
 export async function updateRole(roleId: string, input: RoleFormInput): Promise<ActionResult<RoleSummary>> {
-  const sessionUserId = await requireManageSession();
+  const sessionUserId = await requireManageSession("users.edit");
   if (!sessionUserId) return { ok: false, error: "You don't have permission to edit roles." };
 
   const parsedId = roleIdSchema.safeParse(roleId);
@@ -186,7 +186,7 @@ export async function updateRole(roleId: string, input: RoleFormInput): Promise<
       where: { id: BigInt(sessionUserId) },
       select: { role_id: true },
     });
-    if (sessionUser?.role_id === id && !parsed.data.permissions.includes(MANAGE_USERS_PERMISSION)) {
+    if (sessionUser?.role_id === id && !parsed.data.permissions.includes(EDIT_USERS_PERMISSION)) {
       return { ok: false, error: "This is your role. Keep Manage on Users & roles so you don't lock yourself out." };
     }
 
@@ -222,7 +222,7 @@ export async function updateRole(roleId: string, input: RoleFormInput): Promise<
 }
 
 export async function deleteRole(roleId: string): Promise<ActionResult<{ id: string }>> {
-  if (!(await requireManageSession())) {
+  if (!(await requireManageSession("users.delete"))) {
     return { ok: false, error: "You don't have permission to delete roles." };
   }
 

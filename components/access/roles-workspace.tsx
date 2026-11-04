@@ -38,12 +38,12 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDeleteRole, useRoles } from "@/hooks/use-roles"
-import { permissionResourceLabels, permissionResources, toAccessLevels } from "@/lib/permissions"
+import { canChangeRecords, permissionResourceLabels, permissionResources, toResourceGrants , type RecordPermissions } from "@/lib/permissions"
 import type { RoleSummary } from "@/lib/roles"
 
 const MAX_MODULE_BADGES = 6
 
-export function RolesWorkspace({ canManage }: { canManage: boolean }) {
+export function RolesWorkspace({ can }: { can: RecordPermissions }) {
   const { data, isPending, isError, refetch } = useRoles()
   const [deleting, setDeleting] = useState<{ open: boolean; role: RoleSummary | null }>({ open: false, role: null })
 
@@ -69,12 +69,12 @@ export function RolesWorkspace({ canManage }: { canManage: boolean }) {
           <RoleCard
             key={role.id}
             role={role}
-            canManage={canManage}
+            can={can}
             onDelete={() => setDeleting({ open: true, role })}
           />
         ))}
 
-      {canManage && !isPending && (
+      {can.create && !isPending && (
         <Link
           href="/admin/users/roles/new"
           className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-primary/30 text-center transition-colors hover:border-primary/60 hover:bg-primary/5"
@@ -98,10 +98,10 @@ export function RolesWorkspace({ canManage }: { canManage: boolean }) {
   )
 }
 
-function RoleCard({ role, canManage, onDelete }: { role: RoleSummary; canManage: boolean; onDelete: () => void }) {
-  const levels = toAccessLevels(role.permissions)
-  const granted = permissionResources.filter((resource) => levels[resource] !== "none")
-  const isEditable = canManage && !role.isProtected
+function RoleCard({ role, can, onDelete }: { role: RoleSummary; can: RecordPermissions; onDelete: () => void }) {
+  const grants = toResourceGrants(role.permissions)
+  const granted = permissionResources.filter((resource) => grants[resource].length > 0)
+  const isEditable = can.edit && !role.isProtected
   const href = `/admin/users/roles/${role.id}`
 
   return (
@@ -122,7 +122,7 @@ function RoleCard({ role, canManage, onDelete }: { role: RoleSummary; canManage:
         <CardDescription className="col-start-2 line-clamp-1">
           {role.description ?? "No description"}
         </CardDescription>
-        {canManage && (
+        {(can.create || (can.delete && !role.isProtected)) && (
           <div className="col-start-3 row-span-2 row-start-1">
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -133,13 +133,15 @@ function RoleCard({ role, canManage, onDelete }: { role: RoleSummary; canManage:
                 }
               />
               <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem render={<Link href={`/admin/users/roles/new?from=${role.id}`} />}>
-                  <CopyIcon />
-                  Duplicate
-                </DropdownMenuItem>
-                {!role.isProtected && (
+                {can.create && (
+                  <DropdownMenuItem render={<Link href={`/admin/users/roles/new?from=${role.id}`} />}>
+                    <CopyIcon />
+                    Duplicate
+                  </DropdownMenuItem>
+                )}
+                {can.delete && !role.isProtected && (
                   <>
-                    <DropdownMenuSeparator />
+                    {can.create && <DropdownMenuSeparator />}
                     <DropdownMenuItem variant="destructive" disabled={role.userCount > 0} onClick={onDelete}>
                       <Trash2Icon />
                       {role.userCount > 0 ? "Reassign users to delete" : "Delete role"}
@@ -184,7 +186,7 @@ function RoleCard({ role, canManage, onDelete }: { role: RoleSummary; canManage:
                 <Badge
                   key={resource}
                   variant="outline"
-                  className={levels[resource] === "manage" ? "border-primary/30 text-primary" : "text-muted-foreground"}
+                  className={canChangeRecords(grants[resource]) ? "border-primary/30 text-primary" : "text-muted-foreground"}
                 >
                   {permissionResourceLabels[resource]}
                 </Badge>

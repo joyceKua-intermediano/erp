@@ -88,7 +88,8 @@ function blockBody(block: TemplateBlock, { bilingual, bordered }: Layout): strin
     case "title": {
       const title = `#heading(level: 1)[${inline(block.text.replace(/\n/g, " "))}]`
       if (!bilingual || !block.translation.trim()) return title
-      return `${title}\n#align(center, text(9pt, fill: luma(90))[${inline(block.translation.replace(/\n/g, " "))}])`
+      // The gap keeps the subtitle clear of a bordered row that follows, since those rows sit flush.
+      return `${title}\n#align(center, text(9pt, fill: luma(90))[${inline(block.translation.replace(/\n/g, " "))}])\n#v(0.6em)`
     }
     case "clause": {
       const primary = clauseSide(block.heading, block.text)

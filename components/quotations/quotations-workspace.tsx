@@ -41,6 +41,7 @@ import {
 } from "@/lib/quotations"
 import { ArchiveQuotationDialog } from "./archive-quotation-dialog"
 import { QuotationFormSheet } from "./quotation-form-sheet"
+import type { RecordPermissions } from "@/lib/permissions"
 
 const CHOOSE_CLUSTER_DESCRIPTION = "Quotations are scoped to one Intermediano legal entity at a time."
 
@@ -94,10 +95,10 @@ export function QuotationTotal({ quotation }: { quotation: QuotationListItem }) 
 }
 
 type QuotationsWorkspaceProps = {
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function QuotationsWorkspace({ canManage }: QuotationsWorkspaceProps) {
+export function QuotationsWorkspace({ can }: QuotationsWorkspaceProps) {
   const activeCluster = useActiveCluster()
 
   if (!activeCluster) return <ChooseClusterCard description={CHOOSE_CLUSTER_DESCRIPTION} />
@@ -109,7 +110,7 @@ export function QuotationsWorkspace({ canManage }: QuotationsWorkspaceProps) {
     <ClusterQuotationsPanel
       key={activeCluster.id}
       clusterLabel={activeCluster.label}
-      canManage={canManage}
+      can={can}
       hasPartner={activeCluster.modules.includes("partner")}
     />
   )
@@ -122,11 +123,11 @@ const scopeLabels: Record<QuotationScope, string> = {
 
 function ClusterQuotationsPanel({
   clusterLabel,
-  canManage,
+  can,
   hasPartner,
 }: {
   clusterLabel: string
-  canManage: boolean
+  can: RecordPermissions
   hasPartner: boolean
 }) {
   const [selectedScope, setScope] = useState<QuotationScope>("direct")
@@ -250,7 +251,7 @@ function ClusterQuotationsPanel({
                 className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
               />
             </div>
-            {canManage && isPorted && (
+            {can.create && isPorted && (
               <Button onClick={() => setSheet((current) => ({ open: true, key: current.key + 1 }))}>
                 <PlusIcon />
                 Add quotation
@@ -402,7 +403,7 @@ function ClusterQuotationsPanel({
                               <EyeIcon />
                               View breakdown
                             </DropdownMenuItem>
-                            {canManage && !quotation.isPartner && (
+                            {can.delete && !quotation.isPartner && (
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
@@ -426,23 +427,21 @@ function ClusterQuotationsPanel({
         </CardContent>
       </Card>
 
-      {canManage && (
-        <>
-          {isPorted && (
-            <QuotationFormSheet
-              open={sheet.open}
-              quotation={null}
-              clusterLabel={clusterLabel}
-              formKey={sheet.key}
-              onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
-            />
-          )}
-          <ArchiveQuotationDialog
-            open={archive.open}
-            quotation={archive.quotation}
-            onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
-          />
-        </>
+      {can.create && isPorted && (
+        <QuotationFormSheet
+          open={sheet.open}
+          quotation={null}
+          clusterLabel={clusterLabel}
+          formKey={sheet.key}
+          onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
+        />
+      )}
+      {can.delete && (
+        <ArchiveQuotationDialog
+          open={archive.open}
+          quotation={archive.quotation}
+          onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
+        />
       )}
     </div>
   )

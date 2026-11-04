@@ -11,6 +11,7 @@ import {
 } from "@/lib/consultants";
 import { Prisma } from "@/lib/generated/prisma/client";
 import type { CountryOption } from "@/lib/intermediano-companies";
+import type { PermissionName } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 // Consultants are shared across clusters, but the employee count only covers clusters the user can see.
@@ -53,7 +54,7 @@ function toConsultant(consultant: ConsultantRow): Consultant {
 }
 
 export async function getConsultants(): Promise<Consultant[]> {
-  const session = await requirePermission("consultants.view");
+  const session = await requirePermission("consultants.list");
 
   try {
     const consultants = await prisma.consultants.findMany({
@@ -69,7 +70,7 @@ export async function getConsultants(): Promise<Consultant[]> {
 }
 
 export async function getConsultant(consultantId: string): Promise<Consultant | null> {
-  const session = await requirePermission("consultants.view");
+  const session = await requirePermission("consultants.show");
 
   const parsedId = consultantIdSchema.safeParse(consultantId);
   if (!parsedId.success) return null;
@@ -87,7 +88,7 @@ export async function getConsultant(consultantId: string): Promise<Consultant | 
 }
 
 export async function getConsultantCountryOptions(): Promise<CountryOption[]> {
-  await requirePermission("consultants.view");
+  await requirePermission(["consultants.create", "consultants.edit"]);
 
   try {
     const countries = await prisma.countries.findMany({
@@ -102,9 +103,9 @@ export async function getConsultantCountryOptions(): Promise<CountryOption[]> {
   }
 }
 
-async function canManageConsultants() {
+async function canManageConsultants(permission: PermissionName) {
   try {
-    await requirePermission("consultants.manage");
+    await requirePermission(permission);
     return true;
   } catch {
     return false;
@@ -149,7 +150,7 @@ async function validateConsultantInput(
 const DUPLICATE_NAME_ERROR = "A consultant with this name already exists, possibly archived.";
 
 export async function createConsultant(input: ConsultantFormInput): Promise<ActionResult<{ id: string }>> {
-  if (!(await canManageConsultants())) {
+  if (!(await canManageConsultants("consultants.create"))) {
     return { ok: false, error: "You don't have permission to add consultants." };
   }
 
@@ -174,7 +175,7 @@ export async function updateConsultant(
   consultantId: string,
   input: ConsultantFormInput,
 ): Promise<ActionResult<{ id: string }>> {
-  if (!(await canManageConsultants())) {
+  if (!(await canManageConsultants("consultants.edit"))) {
     return { ok: false, error: "You don't have permission to edit consultants." };
   }
 
@@ -200,7 +201,7 @@ export async function updateConsultant(
 }
 
 export async function archiveConsultant(consultantId: string): Promise<ActionResult<{ id: string }>> {
-  if (!(await canManageConsultants())) {
+  if (!(await canManageConsultants("consultants.delete"))) {
     return { ok: false, error: "You don't have permission to archive consultants." };
   }
 

@@ -1,37 +1,34 @@
 // Page setup shared by every contract template. Usage:
 //   #show: contract.with(data.cluster, title: "Contrato individual de trabajo")
 
+// Letterhead taken from the legacy contracts: logo and entity name above a red rule, entity details and logo below
+// another red rule. Both are drawn at fixed page positions, so they repeat identically on every page.
+#let brand-red = rgb("#e30613")
+#let heading-gray = rgb("#1f2937")
+#let wordmark = "/assets/intermediano-wordmark.png"
+
+#let letterhead(cluster) = {
+  place(top + left, dx: 30pt, dy: 7.5pt, image(wordmark, height: 36pt))
+  place(top + right, dx: -30pt, dy: 17pt, text(12.8pt, weight: "bold", fill: heading-gray, cluster.legalName))
+  place(top + left, dy: 52.1pt, line(length: 100%, stroke: 2.25pt + brand-red))
+
+  place(top + left, dy: 798pt, line(length: 100%, stroke: 2.25pt + brand-red))
+  place(top + left, dx: 30pt, dy: 804.5pt, block(width: 440pt)[
+    #set text(6.8pt, fill: rgb("#4b5563"))
+    #set par(justify: false, leading: 0.35em, spacing: 0.35em)
+    #text(weight: "bold", fill: heading-gray, cluster.legalName) \
+    #if cluster.address != none [#cluster.address \ ]
+    #(cluster.website, cluster.phone).filter(part => part != none).join(" — ")
+  ])
+  place(top + right, dx: -30pt, dy: 806.3pt, image(wordmark, height: 22.5pt))
+}
+
 #let contract(cluster, title: none, body) = {
   set document(title: title)
   set page(
     paper: "a4",
-    margin: (top: 3cm, bottom: 2.6cm, x: 2.2cm),
-    header: [
-      #set text(9pt, fill: luma(90))
-      #grid(
-        columns: (1fr, auto),
-        align: (left + horizon, right + horizon),
-        text(11pt, weight: "bold", fill: black, cluster.legalName),
-        if cluster.website != none { cluster.website },
-      )
-      #v(-0.4em)
-      #line(length: 100%, stroke: 0.5pt + luma(180))
-    ],
-    footer: context [
-      #set text(8pt, fill: luma(110))
-      #line(length: 100%, stroke: 0.5pt + luma(180))
-      #v(-0.4em)
-      #grid(
-        columns: (1fr, auto),
-        column-gutter: 1em,
-        [
-          #cluster.legalName
-          #if cluster.address != none [ · #cluster.address]
-          #if cluster.phone != none [ · #cluster.phone]
-        ],
-        counter(page).display("1 / 1", both: true),
-      )
-    ],
+    margin: (top: 86pt, bottom: 62pt, x: 30pt),
+    background: letterhead(cluster),
   )
   set text(font: ("Liberation Sans", "Arial"), size: 10.5pt, lang: cluster.language)
   set par(justify: true, leading: 0.7em, spacing: 1.1em)

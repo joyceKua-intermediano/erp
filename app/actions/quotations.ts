@@ -3,6 +3,7 @@
 import type { ActionResult } from "@/lib/action-result";
 import { requireClusterModule, requireClusterPermission } from "@/lib/auth";
 import { Prisma } from "@/lib/generated/prisma/client";
+import type { PermissionName } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import {
   quotationFields,
@@ -61,8 +62,8 @@ export async function getClusterQuotations(clusterId: string, scope: QuotationSc
   const isPartner = parsedScope.data === "partner";
 
   const { clusterId: companyId } = isPartner
-    ? await requireClusterModule(clusterId, "quotations.view", "partner")
-    : await requireClusterPermission(clusterId, "quotations.view");
+    ? await requireClusterModule(clusterId, "quotations.list", "partner")
+    : await requireClusterPermission(clusterId, "quotations.list");
 
   try {
     const cluster = await findQuotationCluster(companyId);
@@ -84,7 +85,7 @@ export async function getClusterQuotations(clusterId: string, scope: QuotationSc
 }
 
 export async function getQuotation(clusterId: string, quotationId: string): Promise<QuotationDetail | null> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "quotations.view");
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, "quotations.show");
 
   const parsedId = quotationIdSchema.safeParse(quotationId);
   if (!parsedId.success) return null;
@@ -99,7 +100,7 @@ export async function getQuotation(clusterId: string, quotationId: string): Prom
       select: quotationSelect,
     });
     if (!row) return null;
-    if (row.is_partner) await requireClusterModule(clusterId, "quotations.view", "partner");
+    if (row.is_partner) await requireClusterModule(clusterId, "quotations.show", "partner");
 
     const [payrollCosts] = row.payroll_costs;
     return {
@@ -136,7 +137,7 @@ export async function getQuotation(clusterId: string, quotationId: string): Prom
 }
 
 export async function getQuotationFormOptions(clusterId: string): Promise<QuotationFormOptions> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "quotations.manage");
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, ["quotations.create", "quotations.edit"]);
 
   try {
     const cluster = await findQuotationCluster(companyId);
@@ -166,9 +167,9 @@ export async function getQuotationFormOptions(clusterId: string): Promise<Quotat
   }
 }
 
-async function requireManageCluster(clusterId: string): Promise<bigint | null> {
+async function requireManageCluster(clusterId: string, permission: PermissionName): Promise<bigint | null> {
   try {
-    const { clusterId: companyId } = await requireClusterPermission(clusterId, "quotations.manage");
+    const { clusterId: companyId } = await requireClusterPermission(clusterId, permission);
     return companyId;
   } catch {
     return null;
@@ -176,7 +177,7 @@ async function requireManageCluster(clusterId: string): Promise<bigint | null> {
 }
 
 export async function createQuotation(clusterId: string, input: QuotationFormInput): Promise<ActionResult<{ id: string }>> {
-  const companyId = await requireManageCluster(clusterId);
+  const companyId = await requireManageCluster(clusterId, "quotations.create");
   if (companyId === null) return { ok: false, error: "You don't have permission to add quotations in this cluster." };
 
   try {
@@ -218,7 +219,7 @@ export async function updateQuotation(
   quotationId: string,
   input: QuotationFormInput,
 ): Promise<ActionResult<{ id: string }>> {
-  const companyId = await requireManageCluster(clusterId);
+  const companyId = await requireManageCluster(clusterId, "quotations.edit");
   if (companyId === null) return { ok: false, error: "You don't have permission to edit quotations in this cluster." };
 
   const parsedId = quotationIdSchema.safeParse(quotationId);
@@ -264,7 +265,7 @@ export async function updateQuotation(
 }
 
 export async function archiveQuotation(clusterId: string, quotationId: string): Promise<ActionResult<{ id: string }>> {
-  const companyId = await requireManageCluster(clusterId);
+  const companyId = await requireManageCluster(clusterId, "quotations.delete");
   if (companyId === null) return { ok: false, error: "You don't have permission to archive quotations in this cluster." };
 
   const parsedId = quotationIdSchema.safeParse(quotationId);

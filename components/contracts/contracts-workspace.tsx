@@ -45,6 +45,7 @@ import { SEARCH_DEBOUNCE_MS } from "@/lib/pagination"
 import { ArchiveContractDialog } from "./archive-contract-dialog"
 import { ContractKindBadge, SignatureBadges } from "./contract-badges"
 import { ContractFormSheet } from "./contract-form-sheet"
+import type { RecordPermissions } from "@/lib/permissions"
 
 type PeriodFilter = ContractPeriodFilter
 
@@ -72,10 +73,10 @@ function FilterBadge({ isActive, onClick, children }: { isActive: boolean; onCli
 }
 
 type ContractsWorkspaceProps = {
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function ContractsWorkspace({ canManage }: ContractsWorkspaceProps) {
+export function ContractsWorkspace({ can }: ContractsWorkspaceProps) {
   const activeCluster = useActiveCluster()
 
   if (!activeCluster) return <ChooseClusterCard description={CHOOSE_CLUSTER_DESCRIPTION} />
@@ -83,10 +84,10 @@ export function ContractsWorkspace({ canManage }: ContractsWorkspaceProps) {
     return <ModuleDisabledCard module="contracts" clusterLabel={activeCluster.label} />
   }
 
-  return <ClusterContractsPanel key={activeCluster.id} clusterLabel={activeCluster.label} canManage={canManage} />
+  return <ClusterContractsPanel key={activeCluster.id} clusterLabel={activeCluster.label} can={can} />
 }
 
-function ClusterContractsPanel({ clusterLabel, canManage }: { clusterLabel: string; canManage: boolean }) {
+function ClusterContractsPanel({ clusterLabel, can }: { clusterLabel: string; can: RecordPermissions }) {
   const [search, setSearch] = useState("")
   const [kindFilter, setKindFilter] = useState<ContractKind | null>(null)
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all")
@@ -164,7 +165,7 @@ function ClusterContractsPanel({ clusterLabel, canManage }: { clusterLabel: stri
                 className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
               />
             </div>
-            {canManage && (
+            {can.create && (
               <Button onClick={() => setSheet((current) => ({ open: true, key: current.key + 1 }))}>
                 <PlusIcon />
                 Add contract
@@ -325,7 +326,7 @@ function ClusterContractsPanel({ clusterLabel, canManage }: { clusterLabel: stri
                               <EyeIcon />
                               View details
                             </DropdownMenuItem>
-                            {canManage && (
+                            {can.delete && (
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
@@ -350,21 +351,21 @@ function ClusterContractsPanel({ clusterLabel, canManage }: { clusterLabel: stri
         </CardContent>
       </Card>
 
-      {canManage && (
-        <>
-          <ContractFormSheet
-            open={sheet.open}
-            contract={null}
-            clusterLabel={clusterLabel}
-            formKey={sheet.key}
-            onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
-          />
-          <ArchiveContractDialog
-            open={archive.open}
-            contract={archive.contract}
-            onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
-          />
-        </>
+      {can.create && (
+        <ContractFormSheet
+          open={sheet.open}
+          contract={null}
+          clusterLabel={clusterLabel}
+          formKey={sheet.key}
+          onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
+        />
+      )}
+      {can.delete && (
+        <ArchiveContractDialog
+          open={archive.open}
+          contract={archive.contract}
+          onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
+        />
       )}
     </div>
   )

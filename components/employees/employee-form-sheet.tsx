@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PasswordField } from "@/components/customer-accounts/password-field"
 import {
   Sheet,
   SheetContent,
@@ -22,8 +23,9 @@ import {
   type EmployeeDetail,
   type EmployeeFormInput,
 } from "@/lib/employees"
+import { passwordResetSchema } from "@/lib/passwords"
 
-type FieldErrors = Partial<Record<keyof EmployeeFormInput, string[]>>
+type FieldErrors = Partial<Record<keyof EmployeeFormInput | "password", string[]>>
 
 const NO_CONSULTANT = "none"
 
@@ -44,7 +46,7 @@ export function EmployeeFormSheet({ open, employee, clusterLabel, formKey, onOpe
           <SheetDescription>
             {employee
               ? `Update the basic details for ${employee.name}.`
-              : `Add a new employee to ${clusterLabel}. They can't sign in to the employee portal until they're invited.`}
+              : `Add a new employee to ${clusterLabel}. They sign in to the employee portal with their email and the password you set.`}
           </SheetDescription>
         </SheetHeader>
         <EmployeeForm key={formKey} employee={employee} onDone={() => onOpenChange(false)} />
@@ -55,9 +57,11 @@ export function EmployeeFormSheet({ open, employee, clusterLabel, formKey, onOpe
 
 function EmployeeForm({ employee, onDone }: { employee: EmployeeDetail | null; onDone: () => void }) {
   const [values, setValues] = useState<EmployeeFormInput>(() => toEmployeeFormInput(employee))
+  const [password, setPassword] = useState("")
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const consultantOptions = useConsultantOptions()
   const saveEmployee = useSaveEmployee()
+  const isCreating = employee === null
   const consultants = consultantOptions.data ?? []
   const currentConsultant =
     employee?.consultantId && employee.consultantName
@@ -82,11 +86,15 @@ function EmployeeForm({ employee, onDone }: { employee: EmployeeDetail | null; o
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const parsed = employeeFormSchema.safeParse(values)
-    if (!parsed.success) {
-      setFieldErrors(z.flattenError(parsed.error).fieldErrors)
+    const parsedPassword = isCreating ? passwordResetSchema.safeParse({ password }) : null
+    if (!parsed.success || (parsedPassword && !parsedPassword.success)) {
+      setFieldErrors({
+        ...(parsed.success ? {} : z.flattenError(parsed.error).fieldErrors),
+        ...(parsedPassword && !parsedPassword.success ? z.flattenError(parsedPassword.error).fieldErrors : {}),
+      })
       return
     }
-    saveEmployee.mutate({ employeeId: employee?.id ?? null, input: values }, { onSuccess: onDone })
+    saveEmployee.mutate({ employeeId: employee?.id ?? null, input: values, password }, { onSuccess: onDone })
   }
 
   function textField(key: "name" | "email", label: string, options: { placeholder: string; type?: string }) {
@@ -147,6 +155,19 @@ function EmployeeForm({ employee, onDone }: { employee: EmployeeDetail | null; o
             )}
             <FieldError errors={errorsFor("consultantId")} />
           </Field>
+          {isCreating && (
+            <PasswordField
+              id="employee-password"
+              label="Password"
+              value={password}
+              onChange={(value) => {
+                setPassword(value)
+                setFieldErrors((current) => ({ ...current, password: undefined }))
+              }}
+              errors={fieldErrors.password}
+              recipient="employee"
+            />
+          )}
         </FieldGroup>
       </div>
 
@@ -162,7 +183,7 @@ function EmployeeForm({ employee, onDone }: { employee: EmployeeDetail | null; o
           </Button>
           <Button type="submit" disabled={saveEmployee.isPending}>
             {saveEmployee.isPending && <Loader2Icon className="animate-spin" />}
-            {employee ? "Save changes" : "Add employee"}
+            {isCreating ? "Add employee" : "Save changes"}
           </Button>
         </div>
       </SheetFooter>

@@ -30,6 +30,7 @@ import { ArchiveCompanyDialog } from "./archive-company-dialog"
 import { CompanyFormSheet } from "./company-form-sheet"
 import { CompanyMark } from "./company-mark"
 import { CompanyModulesCard } from "./company-modules-card"
+import type { RecordPermissions } from "@/lib/permissions"
 
 const dateFormatter = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" })
 
@@ -87,20 +88,20 @@ function CompanyLoadError({ onRetry }: { onRetry: () => void }) {
 
 type CompanyDetailProps = {
   companyId: string
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function CompanyDetail({ companyId, canManage }: CompanyDetailProps) {
+export function CompanyDetail({ companyId, can }: CompanyDetailProps) {
   const { data: company, isPending, isError, refetch } = useIntermedianoCompany(companyId)
 
   if (isPending) return <Skeleton className="h-96 rounded-xl" />
   if (isError) return <CompanyLoadError onRetry={() => refetch()} />
   if (!company) return <CompanyNotFound />
 
-  return <CompanyDetailContent company={company} canManage={canManage} />
+  return <CompanyDetailContent company={company} can={can} />
 }
 
-function CompanyDetailContent({ company, canManage }: { company: IntermedianoCompany; canManage: boolean }) {
+function CompanyDetailContent({ company, can }: { company: IntermedianoCompany; can: RecordPermissions }) {
   const router = useRouter()
   const [sheet, setSheet] = useState({ open: false, key: 0 })
   const [isArchiveOpen, setArchiveOpen] = useState(false)
@@ -132,16 +133,20 @@ function CompanyDetailContent({ company, canManage }: { company: IntermedianoCom
               </div>
             </div>
           </div>
-          {canManage && (
+          {(can.edit || can.delete) && (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setSheet((current) => ({ open: true, key: current.key + 1 }))}>
-                <PencilIcon />
-                Edit
-              </Button>
-              <Button variant="destructive" onClick={() => setArchiveOpen(true)}>
-                <ArchiveIcon />
-                Archive
-              </Button>
+              {can.edit && (
+                <Button variant="outline" onClick={() => setSheet((current) => ({ open: true, key: current.key + 1 }))}>
+                  <PencilIcon />
+                  Edit
+                </Button>
+              )}
+              {can.delete && (
+                <Button variant="destructive" onClick={() => setArchiveOpen(true)}>
+                  <ArchiveIcon />
+                  Archive
+                </Button>
+              )}
             </div>
           )}
         </CardContent>
@@ -220,7 +225,7 @@ function CompanyDetailContent({ company, canManage }: { company: IntermedianoCom
             key={company.modules.join(",")}
             companyId={company.id}
             modules={company.modules}
-            canManage={canManage}
+            canManage={can.edit}
           />
           <Card className="[--card-spacing:--spacing(5)]">
             <CardHeader>
@@ -261,21 +266,21 @@ function CompanyDetailContent({ company, canManage }: { company: IntermedianoCom
         </div>
       </div>
 
-      {canManage && (
-        <>
-          <CompanyFormSheet
-            open={sheet.open}
-            company={company}
-            formKey={sheet.key}
-            onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
-          />
-          <ArchiveCompanyDialog
-            open={isArchiveOpen}
-            company={company}
-            onOpenChange={setArchiveOpen}
-            onArchived={() => router.push("/admin/intermediano-companies")}
-          />
-        </>
+      {can.edit && (
+        <CompanyFormSheet
+          open={sheet.open}
+          company={company}
+          formKey={sheet.key}
+          onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
+        />
+      )}
+      {can.delete && (
+        <ArchiveCompanyDialog
+          open={isArchiveOpen}
+          company={company}
+          onOpenChange={setArchiveOpen}
+          onArchived={() => router.push("/admin/intermediano-companies")}
+        />
       )}
     </div>
   )

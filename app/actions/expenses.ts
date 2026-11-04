@@ -30,7 +30,7 @@ export async function getClusterExpenseClaims(
   clusterId: string,
   query?: ExpenseListQuery,
 ): Promise<ClusterExpenseClaims> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "expenses.view");
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, "expenses.list");
   const listQuery = expenseListQuerySchema.parse(query ?? {});
 
   try {
@@ -60,7 +60,7 @@ export async function getClusterExpenseClaims(
 }
 
 export async function getClusterExpenseClaim(clusterId: string, expenseId: string): Promise<ExpenseClaim | null> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "expenses.view");
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, "expenses.show");
 
   const parsedId = expenseIdSchema.safeParse(expenseId);
   if (!parsedId.success) return null;
@@ -79,7 +79,7 @@ export async function getClusterExpenseClaim(clusterId: string, expenseId: strin
 
 async function requireManageCluster(clusterId: string): Promise<bigint | null> {
   try {
-    const { clusterId: companyId } = await requireClusterPermission(clusterId, "expenses.manage");
+    const { clusterId: companyId } = await requireClusterPermission(clusterId, "expenses.edit");
     return companyId;
   } catch {
     return null;

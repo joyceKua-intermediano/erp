@@ -5,7 +5,7 @@ import { ContractsWorkspace } from "@/components/contracts/contracts-workspace";
 import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, recordPermissions } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Contracts",
@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 
 async function ContractsSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "contracts.view")) {
+  if (!user || !hasPermission(user, "contracts.list")) {
     return <AccessDenied message="Ask an administrator for access to Contracts." />;
   }
 
-  return <ContractsWorkspace canManage={hasPermission(user, "contracts.manage")} />;
+  return <ContractsWorkspace can={recordPermissions(user, "contracts")} />;
 }
 
 export default function ContractsPage() {

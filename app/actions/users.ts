@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import type { ActionResult } from "@/lib/action-result";
 import { requirePermission } from "@/lib/auth";
 import { Prisma } from "@/lib/generated/prisma/client";
-import { MANAGE_USERS_PERMISSION } from "@/lib/permissions";
+import { EDIT_USERS_PERMISSION } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { userFormSchema, userIdSchema, type AdminUser, type UserFormInput } from "@/lib/users";
 
@@ -43,14 +43,14 @@ function isUniqueEmailError(error: unknown) {
 
 async function roleGrantsUserManagement(roleId: bigint) {
   const link = await prisma.role_permissions.findFirst({
-    where: { role_id: roleId, permissions: { name: MANAGE_USERS_PERMISSION } },
+    where: { role_id: roleId, permissions: { name: EDIT_USERS_PERMISSION } },
     select: { role_id: true },
   });
   return link !== null;
 }
 
 export async function getUsers(): Promise<AdminUser[]> {
-  await requirePermission("users.view");
+  await requirePermission("users.list");
 
   try {
     const users = await prisma.users.findMany({
@@ -66,7 +66,7 @@ export async function getUsers(): Promise<AdminUser[]> {
 
 export async function createUser(input: UserFormInput): Promise<ActionResult<AdminUser>> {
   try {
-    await requirePermission(MANAGE_USERS_PERMISSION);
+    await requirePermission("users.create");
   } catch {
     return { ok: false, error: "You don't have permission to add users." };
   }
@@ -106,7 +106,7 @@ export async function createUser(input: UserFormInput): Promise<ActionResult<Adm
 export async function updateUser(userId: string, input: UserFormInput): Promise<ActionResult<AdminUser>> {
   let sessionUserId: string;
   try {
-    const session = await requirePermission(MANAGE_USERS_PERMISSION);
+    const session = await requirePermission("users.edit");
     sessionUserId = session.user.id;
   } catch {
     return { ok: false, error: "You don't have permission to edit users." };
@@ -151,7 +151,7 @@ export async function updateUser(userId: string, input: UserFormInput): Promise<
 export async function revokeUserAccess(userId: string): Promise<ActionResult<AdminUser>> {
   let sessionUserId: string;
   try {
-    const session = await requirePermission(MANAGE_USERS_PERMISSION);
+    const session = await requirePermission("users.delete");
     sessionUserId = session.user.id;
   } catch {
     return { ok: false, error: "You don't have permission to revoke access." };

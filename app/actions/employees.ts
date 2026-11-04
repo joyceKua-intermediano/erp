@@ -1,30 +1,39 @@
 "use server";
 
-import { randomBytes } from "node:crypto";
+import bcrypt from "bcryptjs";
 import type { ActionResult } from "@/lib/action-result";
 import { requireClusterPermission } from "@/lib/auth";
 import { deriveContractStatus } from "@/lib/contracts";
+import type { EmployeeProfileOverview } from "@/lib/employee-profile";
+import { loadEmployeeDocuments, loadEmployeeProfile } from "@/lib/employee-profile/records";
 import {
+  employeeCreateSchema,
   employeeFormSchema,
   employeeIdSchema,
   employeeListQuerySchema,
   type ClusterEmployee,
   type ClusterEmployees,
   type ConsultantOption,
+  type EmployeeCreateInput,
   type EmployeeDetail,
   type EmployeeFormInput,
   type EmployeeListQuery,
 } from "@/lib/employees";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { pageArgs } from "@/lib/pagination";
+import { passwordResetSchema, toLaravelBcrypt, type PasswordResetInput } from "@/lib/passwords";
+import type { PermissionName } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+
+// Laravel hashes with 12 rounds; matching it keeps sign-in time the same in both apps.
+const BCRYPT_ROUNDS = 12;
 
 function toIsoDate(value: Date | null) {
   return value ? value.toISOString().slice(0, 10) : null;
 }
 
 export async function getClusterEmployees(clusterId: string, query?: EmployeeListQuery): Promise<ClusterEmployees> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "employees.view");
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, "employees.list");
   const listQuery = employeeListQuerySchema.parse(query ?? {});
 
   const clusterContracts = {
@@ -143,7 +152,7 @@ function toClusterEmployee(employee: ClusterEmployeeRow, now: Date): ClusterEmpl
 }
 
 export async function getEmployee(clusterId: string, employeeId: string): Promise<EmployeeDetail | null> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "employees.view");
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, "employees.show");
 
   const parsedId = employeeIdSchema.safeParse(employeeId);
   if (!parsedId.success) return null;
@@ -202,6 +211,29 @@ export async function getEmployee(clusterId: string, employeeId: string): Promis
   }
 }
 
+// Read-only for admins; employees fill these in from their own portal.
+export async function getEmployeeProfile(clusterId: string, employeeId: string): Promise<EmployeeProfileOverview | null> {
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, "employees.show");
+
+  const parsedId = employeeIdSchema.safeParse(employeeId);
+  if (!parsedId.success) return null;
+
+  try {
+    const id = BigInt(parsedId.data);
+    const employee = await prisma.employees.findFirst({
+      where: { id, intermediano_company_id: companyId, deleted_at: null },
+      select: { id: true },
+    });
+    if (!employee) return null;
+
+    const [profile, documents] = await Promise.all([loadEmployeeProfile(id), loadEmployeeDocuments(id)]);
+    return { profile, documents };
+  } catch (error) {
+    console.error("getEmployeeProfile failed", { clusterId: companyId.toString(), employeeId: parsedId.data, error });
+    throw new Error("Could not load this employee's profile.");
+  }
+}
+
 async function findClusterCountryId(companyId: bigint) {
   const company = await prisma.intermediano_companies.findFirst({
     where: { id: companyId, deleted_at: null },
@@ -211,7 +243,7 @@ async function findClusterCountryId(companyId: bigint) {
 }
 
 export async function getConsultantOptions(clusterId: string): Promise<ConsultantOption[]> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "employees.manage");
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, ["employees.create", "employees.edit"]);
 
   try {
     const countryId = await findClusterCountryId(companyId);
@@ -229,18 +261,17 @@ export async function getConsultantOptions(clusterId: string): Promise<Consultan
   }
 }
 
-// Employees sign in to the portal later through an invite, so the NOT NULL password column gets a value no password can match.
-function unusablePassword() {
-  return `invite-pending:${randomBytes(24).toString("hex")}`;
+async function hashPassword(password: string) {
+  return toLaravelBcrypt(await bcrypt.hash(password, BCRYPT_ROUNDS));
 }
 
 function isUniqueEmailError(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
-async function requireManageCluster(clusterId: string): Promise<bigint | null> {
+async function requireManageCluster(clusterId: string, permission: PermissionName): Promise<bigint | null> {
   try {
-    const { clusterId: companyId } = await requireClusterPermission(clusterId, "employees.manage");
+    const { clusterId: companyId } = await requireClusterPermission(clusterId, permission);
     return companyId;
   } catch {
     return null;
@@ -277,12 +308,17 @@ async function validateEmployeeInput(
   };
 }
 
-export async function createEmployee(clusterId: string, input: EmployeeFormInput): Promise<ActionResult<{ id: string }>> {
-  const companyId = await requireManageCluster(clusterId);
+export async function createEmployee(clusterId: string, input: EmployeeCreateInput): Promise<ActionResult<{ id: string }>> {
+  const companyId = await requireManageCluster(clusterId, "employees.create");
   if (companyId === null) return { ok: false, error: "You don't have permission to add employees in this cluster." };
 
+  const parsed = employeeCreateSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Check the form and try again." };
+  }
+
   try {
-    const validated = await validateEmployeeInput(input, companyId, null);
+    const validated = await validateEmployeeInput(parsed.data.employee, companyId, null);
     if (!validated.ok) return validated;
 
     const now = new Date();
@@ -290,7 +326,7 @@ export async function createEmployee(clusterId: string, input: EmployeeFormInput
       data: {
         ...validated.data,
         intermediano_company_id: companyId,
-        password: unusablePassword(),
+        password: await hashPassword(parsed.data.password),
         created_at: now,
         updated_at: now,
       },
@@ -309,7 +345,7 @@ export async function updateEmployee(
   employeeId: string,
   input: EmployeeFormInput,
 ): Promise<ActionResult<{ id: string }>> {
-  const companyId = await requireManageCluster(clusterId);
+  const companyId = await requireManageCluster(clusterId, "employees.edit");
   if (companyId === null) return { ok: false, error: "You don't have permission to edit employees in this cluster." };
 
   const parsedId = employeeIdSchema.safeParse(employeeId);
@@ -337,8 +373,39 @@ export async function updateEmployee(
   }
 }
 
+// No email is sent; the admin shares the new password with the employee themselves.
+export async function resetEmployeePassword(
+  clusterId: string,
+  employeeId: string,
+  input: PasswordResetInput,
+): Promise<ActionResult<{ id: string }>> {
+  const companyId = await requireManageCluster(clusterId, "employees.edit");
+  if (companyId === null) return { ok: false, error: "You don't have permission to reset passwords in this cluster." };
+
+  const parsedId = employeeIdSchema.safeParse(employeeId);
+  if (!parsedId.success) return { ok: false, error: "Unknown employee." };
+
+  const parsed = passwordResetSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Check the form and try again." };
+  }
+
+  try {
+    const result = await prisma.employees.updateMany({
+      where: { id: BigInt(parsedId.data), intermediano_company_id: companyId, deleted_at: null },
+      data: { password: await hashPassword(parsed.data.password), updated_at: new Date() },
+    });
+    if (result.count === 0) return { ok: false, error: "This employee no longer exists in this cluster." };
+
+    return { ok: true, data: { id: parsedId.data } };
+  } catch (error) {
+    console.error("resetEmployeePassword failed", { clusterId: companyId.toString(), employeeId: parsedId.data, error });
+    return { ok: false, error: "Could not reset the password. Try again." };
+  }
+}
+
 export async function archiveEmployee(clusterId: string, employeeId: string): Promise<ActionResult<{ id: string }>> {
-  const companyId = await requireManageCluster(clusterId);
+  const companyId = await requireManageCluster(clusterId, "employees.delete");
   if (companyId === null) return { ok: false, error: "You don't have permission to archive employees in this cluster." };
 
   const parsedId = employeeIdSchema.safeParse(employeeId);

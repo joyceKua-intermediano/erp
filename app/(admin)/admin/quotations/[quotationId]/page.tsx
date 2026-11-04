@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { QuotationDetailView } from "@/components/quotations/quotation-detail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, recordPermissions } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Quotation",
@@ -16,13 +16,13 @@ export const instant = false;
 
 async function QuotationSlot({ params }: { params: PageProps<"/admin/quotations/[quotationId]">["params"] }) {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "quotations.view")) {
+  if (!user || !hasPermission(user, "quotations.show")) {
     return <AccessDenied message="Ask an administrator for access to Quotations." />;
   }
 
   const { quotationId } = await params;
 
-  return <QuotationDetailView quotationId={quotationId} canManage={hasPermission(user, "quotations.manage")} />;
+  return <QuotationDetailView quotationId={quotationId} can={recordPermissions(user, "quotations")} />;
 }
 
 export default function QuotationPage({ params }: PageProps<"/admin/quotations/[quotationId]">) {

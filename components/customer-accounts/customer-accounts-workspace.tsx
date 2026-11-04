@@ -17,6 +17,7 @@ import { CUSTOMER_PORTAL_LOGIN_PATH, type CustomerAccount, type CustomerAccountS
 import { SEARCH_DEBOUNCE_MS } from "@/lib/pagination"
 import { CustomerAccountActions, CustomerAccountStatusBadge } from "./customer-account-actions"
 import { useCustomerAccountDialogs } from "./use-customer-account-dialogs"
+import type { RecordPermissions } from "@/lib/permissions"
 
 const headClassName = "text-xs font-semibold tracking-wide text-primary uppercase"
 
@@ -54,7 +55,7 @@ const statusFilters: { value: CustomerAccountStatus; label: string }[] = [
   { value: "archived", label: "Archived" },
 ]
 
-export function CustomerAccountsWorkspace({ canManage }: { canManage: boolean }) {
+export function CustomerAccountsWorkspace({ can }: { can: RecordPermissions }) {
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState<CustomerAccountStatus>("active")
   const [page, setPage] = useState(1)
@@ -116,7 +117,7 @@ export function CustomerAccountsWorkspace({ canManage }: { canManage: boolean })
                 className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
               />
             </div>
-            {canManage && (
+            {can.create && (
               <Button onClick={openCreate}>
                 <PlusIcon />
                 Add account
@@ -234,7 +235,7 @@ export function CustomerAccountsWorkspace({ canManage }: { canManage: boolean })
                         {formatDate(account.createdAt)}
                       </TableCell>
                       <TableCell className="pr-6 text-right">
-                        {canManage && <CustomerAccountActions account={account} handlers={handlers} />}
+                        <CustomerAccountActions account={account} handlers={handlers} can={can} />
                       </TableCell>
                     </TableRow>
                   ))
@@ -249,7 +250,7 @@ export function CustomerAccountsWorkspace({ canManage }: { canManage: boolean })
         </CardFooter>
       </Card>
 
-      {canManage && dialogs}
+      {(can.create || can.edit || can.delete) && dialogs}
     </div>
   )
 }

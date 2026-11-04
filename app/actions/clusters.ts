@@ -20,7 +20,7 @@ import {
   type CountryOption,
   type IntermedianoCompany,
 } from "@/lib/intermediano-companies";
-import { ADMIN_ROLE_NAME, MANAGE_INTERMEDIANO_COMPANIES_PERMISSION } from "@/lib/permissions";
+import { ADMIN_ROLE_NAME, type PermissionName } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 export async function getClusters(): Promise<Cluster[]> {
@@ -45,7 +45,7 @@ export async function getClusters(): Promise<Cluster[]> {
 }
 
 export async function getAssignableClusters(): Promise<ClusterOption[]> {
-  await requirePermission("users.view");
+  await requirePermission("users.list");
 
   try {
     const companies = await prisma.intermediano_companies.findMany({
@@ -148,7 +148,7 @@ function toIntermedianoCompany(company: CompanyRow, roles: CompanyRoleAccess[]):
 }
 
 export async function getIntermedianoCompanies(): Promise<IntermedianoCompany[]> {
-  const session = await requirePermission("intermediano_companies.view");
+  const session = await requirePermission("intermediano_companies.list");
 
   try {
     const companies = await prisma.intermediano_companies.findMany({
@@ -166,7 +166,7 @@ export async function getIntermedianoCompanies(): Promise<IntermedianoCompany[]>
 }
 
 export async function getIntermedianoCompany(companyId: string): Promise<IntermedianoCompany | null> {
-  const session = await requirePermission("intermediano_companies.view");
+  const session = await requirePermission("intermediano_companies.show");
 
   const parsedId = clusterIdSchema.safeParse(companyId);
   if (!parsedId.success || !canAccessCluster(session.user.clusters, parsedId.data)) return null;
@@ -187,7 +187,7 @@ export async function getIntermedianoCompany(companyId: string): Promise<Interme
 }
 
 export async function getCountryOptions(): Promise<CountryOption[]> {
-  await requirePermission("intermediano_companies.view");
+  await requirePermission(["intermediano_companies.create", "intermediano_companies.edit"]);
 
   try {
     const countries = await prisma.countries.findMany({
@@ -202,9 +202,9 @@ export async function getCountryOptions(): Promise<CountryOption[]> {
   }
 }
 
-async function requireManageScope(): Promise<ClusterScope | null> {
+async function requireManageScope(permission: PermissionName): Promise<ClusterScope | null> {
   try {
-    const session = await requirePermission(MANAGE_INTERMEDIANO_COMPANIES_PERMISSION);
+    const session = await requirePermission(permission);
     return session.user.clusters;
   } catch {
     return null;
@@ -249,7 +249,7 @@ async function validateCompanyInput(
 }
 
 export async function createIntermedianoCompany(input: CompanyFormInput): Promise<ActionResult<{ id: string }>> {
-  if (!(await requireManageScope())) {
+  if (!(await requireManageScope("intermediano_companies.create"))) {
     return { ok: false, error: "You don't have permission to add companies." };
   }
 
@@ -280,7 +280,7 @@ export async function updateIntermedianoCompany(
   companyId: string,
   input: CompanyFormInput,
 ): Promise<ActionResult<{ id: string }>> {
-  const scope = await requireManageScope();
+  const scope = await requireManageScope("intermediano_companies.edit");
   if (!scope) return { ok: false, error: "You don't have permission to edit companies." };
 
   const parsedId = clusterIdSchema.safeParse(companyId);
@@ -307,7 +307,7 @@ export async function updateIntermedianoCompany(
 }
 
 export async function archiveIntermedianoCompany(companyId: string): Promise<ActionResult<{ id: string }>> {
-  const scope = await requireManageScope();
+  const scope = await requireManageScope("intermediano_companies.delete");
   if (!scope) return { ok: false, error: "You don't have permission to archive companies." };
 
   const parsedId = clusterIdSchema.safeParse(companyId);
@@ -334,7 +334,7 @@ export async function updateIntermedianoCompanyModules(
   companyId: string,
   modules: string[],
 ): Promise<ActionResult<{ id: string }>> {
-  const scope = await requireManageScope();
+  const scope = await requireManageScope("intermediano_companies.edit");
   if (!scope) return { ok: false, error: "You don't have permission to change company modules." };
 
   const parsedId = clusterIdSchema.safeParse(companyId);

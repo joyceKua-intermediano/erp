@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PayrollDetailView } from "@/components/payroll/payroll-detail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, recordPermissions } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Payroll",
@@ -16,13 +16,13 @@ export const instant = false;
 
 async function PayrollDetailSlot({ params }: { params: PageProps<"/admin/payroll/[payrollId]">["params"] }) {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "payroll.view")) {
+  if (!user || !hasPermission(user, "payroll.show")) {
     return <AccessDenied message="Ask an administrator for access to Payroll." />;
   }
 
   const { payrollId } = await params;
 
-  return <PayrollDetailView payrollId={payrollId} canManage={hasPermission(user, "payroll.manage")} />;
+  return <PayrollDetailView payrollId={payrollId} can={recordPermissions(user, "payroll")} />;
 }
 
 export default function PayrollDetailPage({ params }: PageProps<"/admin/payroll/[payrollId]">) {

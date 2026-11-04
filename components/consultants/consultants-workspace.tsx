@@ -37,6 +37,7 @@ import type { Consultant } from "@/lib/consultants"
 import type { CountryOption } from "@/lib/intermediano-companies"
 import { ArchiveConsultantDialog } from "./archive-consultant-dialog"
 import { ConsultantFormSheet } from "./consultant-form-sheet"
+import type { RecordPermissions } from "@/lib/permissions"
 
 function matchesSearch(consultant: Consultant, query: string) {
   const needle = query.trim().toLowerCase()
@@ -47,10 +48,10 @@ function matchesSearch(consultant: Consultant, query: string) {
 }
 
 type ConsultantsWorkspaceProps = {
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function ConsultantsWorkspace({ canManage }: ConsultantsWorkspaceProps) {
+export function ConsultantsWorkspace({ can }: ConsultantsWorkspaceProps) {
   const [search, setSearch] = useState("")
   const [countryFilter, setCountryFilter] = useState<string | null>(null)
   const [sheet, setSheet] = useState<{ open: boolean; consultant: Consultant | null; key: number }>({
@@ -131,7 +132,7 @@ export function ConsultantsWorkspace({ canManage }: ConsultantsWorkspaceProps) {
                 className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
               />
             </div>
-            {canManage && (
+            {can.create && (
               <Button onClick={() => openSheet(null)}>
                 <PlusIcon />
                 Add consultant
@@ -289,12 +290,14 @@ export function ConsultantsWorkspace({ canManage }: ConsultantsWorkspaceProps) {
                               <EyeIcon />
                               View details
                             </DropdownMenuItem>
-                            {canManage && (
+                            {can.edit && (
+                              <DropdownMenuItem onClick={() => openSheet(consultant)}>
+                                <PencilIcon />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
+                            {can.delete && (
                               <>
-                                <DropdownMenuItem onClick={() => openSheet(consultant)}>
-                                  <PencilIcon />
-                                  Edit
-                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   variant="destructive"
@@ -317,20 +320,20 @@ export function ConsultantsWorkspace({ canManage }: ConsultantsWorkspaceProps) {
         </CardContent>
       </Card>
 
-      {canManage && (
-        <>
-          <ConsultantFormSheet
-            open={sheet.open}
-            consultant={sheet.consultant}
-            formKey={sheet.key}
-            onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
-          />
-          <ArchiveConsultantDialog
-            open={archive.open}
-            consultant={archive.consultant}
-            onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
-          />
-        </>
+      {(can.create || can.edit) && (
+        <ConsultantFormSheet
+          open={sheet.open}
+          consultant={sheet.consultant}
+          formKey={sheet.key}
+          onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
+        />
+      )}
+      {can.delete && (
+        <ArchiveConsultantDialog
+          open={archive.open}
+          consultant={archive.consultant}
+          onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
+        />
       )}
     </div>
   )

@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { CompaniesWorkspace } from "@/components/intermediano-companies/companies-workspace";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, recordPermissions } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Intermediano companies",
@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 
 async function CompaniesSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "intermediano_companies.view")) {
+  if (!user || !hasPermission(user, "intermediano_companies.list")) {
     return <AccessDenied message="Ask an administrator for access to Configuration." />;
   }
 
-  return <CompaniesWorkspace canManage={hasPermission(user, "intermediano_companies.manage")} />;
+  return <CompaniesWorkspace can={recordPermissions(user, "intermediano_companies")} />;
 }
 
 export default function IntermedianoCompaniesPage() {

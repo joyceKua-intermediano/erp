@@ -47,27 +47,27 @@ const overviewItems: GatedNavItem[] = [
 
 // Only modules with a page in the new app are listed.
 const clusterItems: ClusterNavItem[] = [
-  { title: "Quotations", href: "/admin/quotations", icon: FileTextIcon, permission: "quotations.view", module: "quotations" },
-  { title: "Employees", href: "/admin/employees", icon: UsersIcon, permission: "employees.view", module: "employees" },
-  { title: "Contracts", href: "/admin/contracts", icon: FileSignatureIcon, permission: "contracts.view", module: "contracts" },
-  { title: "Timesheets", href: "/admin/timesheets", icon: CalendarClockIcon, permission: "timesheets.view", module: "timesheets" },
-  { title: "Vacations", href: "/admin/vacations", icon: PlaneIcon, permission: "employees.view", module: "employees" },
-  { title: "Expenses", href: "/admin/expenses", icon: WalletIcon, permission: "expenses.view", module: "expenses" },
-  { title: "Payroll", href: "/admin/payroll", icon: CoinsIcon, permission: "payroll.view", module: "payroll" },
-  { title: "Payslips", href: "/admin/payslips", icon: ReceiptIcon, permission: "payroll.view", module: "payslips" },
+  { title: "Quotations", href: "/admin/quotations", icon: FileTextIcon, permission: "quotations.list", module: "quotations" },
+  { title: "Employees", href: "/admin/employees", icon: UsersIcon, permission: "employees.list", module: "employees" },
+  { title: "Contracts", href: "/admin/contracts", icon: FileSignatureIcon, permission: "contracts.list", module: "contracts" },
+  { title: "Timesheets", href: "/admin/timesheets", icon: CalendarClockIcon, permission: "timesheets.list", module: "timesheets" },
+  { title: "Vacations", href: "/admin/vacations", icon: PlaneIcon, permission: "vacations.list", module: "employees" },
+  { title: "Expenses", href: "/admin/expenses", icon: WalletIcon, permission: "expenses.list", module: "expenses" },
+  { title: "Payroll", href: "/admin/payroll", icon: CoinsIcon, permission: "payroll.list", module: "payroll" },
+  { title: "Payslips", href: "/admin/payslips", icon: ReceiptIcon, permission: "payslips.list", module: "payslips" },
 ]
 
 const sharedGroups: { label: string; items: GatedNavItem[] }[] = [
   {
     label: "Sales",
     items: [
-      { title: "Companies", href: "/admin/companies", icon: Building2Icon, permission: "companies.view" },
-      { title: "Partners", href: "/admin/partners", icon: HandshakeIcon, permission: "partners.view" },
+      { title: "Companies", href: "/admin/companies", icon: Building2Icon, permission: "companies.list" },
+      { title: "Partners", href: "/admin/partners", icon: HandshakeIcon, permission: "partners.list" },
     ],
   },
   {
     label: "Recruitment",
-    items: [{ title: "Consultants", href: "/admin/consultants", icon: UserSearchIcon, permission: "consultants.view" }],
+    items: [{ title: "Consultants", href: "/admin/consultants", icon: UserSearchIcon, permission: "consultants.list" }],
   },
   {
     label: "Settings",
@@ -76,11 +76,11 @@ const sharedGroups: { label: string; items: GatedNavItem[] }[] = [
         title: "Intermediano companies",
         href: "/admin/intermediano-companies",
         icon: BuildingIcon,
-        permission: "intermediano_companies.view",
+        permission: "intermediano_companies.list",
       },
-      { title: "Contract templates", href: "/admin/templates", icon: FileCodeIcon, permission: "settings.view" },
-      { title: "Holidays", href: "/admin/holidays", icon: CalendarDaysIcon, permission: "settings.view" },
-      { title: "Users & roles", href: "/admin/users", icon: ShieldCheckIcon, permission: "users.view" },
+      { title: "Contract templates", href: "/admin/templates", icon: FileCodeIcon, permission: "templates.list" },
+      { title: "Holidays", href: "/admin/holidays", icon: CalendarDaysIcon, permission: "holidays.list" },
+      { title: "Users & roles", href: "/admin/users", icon: ShieldCheckIcon, permission: "users.list" },
     ],
   },
 ]

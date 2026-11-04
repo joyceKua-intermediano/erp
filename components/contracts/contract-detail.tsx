@@ -23,6 +23,7 @@ import { salaryModeLabels, stripHtml, type ContractDetail } from "@/lib/contract
 import { ArchiveContractDialog } from "./archive-contract-dialog"
 import { ContractKindBadge, SignatureBadges } from "./contract-badges"
 import { ContractFormSheet } from "./contract-form-sheet"
+import type { RecordPermissions } from "@/lib/permissions"
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })
 const salaryFormatter = new Intl.NumberFormat("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -91,10 +92,10 @@ function ContractLoadError({ onRetry }: { onRetry: () => void }) {
 
 type ContractDetailViewProps = {
   contractId: string
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function ContractDetailView({ contractId, canManage }: ContractDetailViewProps) {
+export function ContractDetailView({ contractId, can }: ContractDetailViewProps) {
   const activeCluster = useActiveCluster()
 
   if (!activeCluster) {
@@ -110,7 +111,7 @@ export function ContractDetailView({ contractId, canManage }: ContractDetailView
       contractId={contractId}
       clusterId={activeCluster.id}
       clusterLabel={activeCluster.label}
-      canManage={canManage}
+      can={can}
     />
   )
 }
@@ -119,7 +120,7 @@ function ClusterContractDetail({
   contractId,
   clusterId,
   clusterLabel,
-  canManage,
+  can,
 }: ContractDetailViewProps & { clusterId: string; clusterLabel: string }) {
   const { data: contract, isPending, isError, refetch } = useContract(contractId)
 
@@ -127,7 +128,7 @@ function ClusterContractDetail({
   if (isError) return <ContractLoadError onRetry={() => refetch()} />
   if (!contract) return <ContractNotFound clusterLabel={clusterLabel} />
 
-  return <ContractDetailContent contract={contract} clusterId={clusterId} canManage={canManage} />
+  return <ContractDetailContent contract={contract} clusterId={clusterId} can={can} />
 }
 
 function PdfActions({ contract, clusterId }: { contract: ContractDetail; clusterId: string }) {
@@ -164,16 +165,16 @@ function TextBlock({ value }: { value: string | null }) {
 function ContractDetailContent({
   contract,
   clusterId,
-  canManage,
+  can,
 }: {
   contract: ContractDetail
   clusterId: string
-  canManage: boolean
+  can: RecordPermissions
 }) {
   const router = useRouter()
   const [sheet, setSheet] = useState({ open: false, key: 0 })
   const [isArchiveOpen, setArchiveOpen] = useState(false)
-  const canEdit = canManage && contract.kind === "employee"
+  const canEdit = can.edit && contract.kind === "employee"
   const employeeSignedAt = formatDateTime(contract.employeeSignedAt)
   const adminSignedAt = formatDateTime(contract.adminSignedAt)
   const signerLabel = contract.kind === "customer" ? "Customer" : "Employee"
@@ -210,7 +211,7 @@ function ContractDetailContent({
                 Edit
               </Button>
             )}
-            {canManage && (
+            {can.delete && (
               <Button variant="destructive" onClick={() => setArchiveOpen(true)}>
                 <ArchiveIcon />
                 Archive
@@ -220,7 +221,7 @@ function ContractDetailContent({
         </CardContent>
       </Card>
 
-      {canManage && contract.kind !== "employee" && (
+      {can.edit && contract.kind !== "employee" && (
         <p className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
           {contract.kind
             ? "Customer and partner contracts become editable here once the Quotations and Partners modules exist."
@@ -332,7 +333,7 @@ function ContractDetailContent({
         </CardContent>
       </Card>
 
-      {canManage && (
+      {(canEdit || can.delete) && (
         <>
           {canEdit && (
             <ContractFormSheet
@@ -343,12 +344,14 @@ function ContractDetailContent({
               onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
             />
           )}
-          <ArchiveContractDialog
-            open={isArchiveOpen}
-            contract={contract}
-            onOpenChange={setArchiveOpen}
-            onArchived={() => router.push("/admin/contracts")}
-          />
+          {can.delete && (
+            <ArchiveContractDialog
+              open={isArchiveOpen}
+              contract={contract}
+              onOpenChange={setArchiveOpen}
+              onArchived={() => router.push("/admin/contracts")}
+            />
+          )}
         </>
       )}
     </div>

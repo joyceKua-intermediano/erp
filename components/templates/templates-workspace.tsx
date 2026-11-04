@@ -30,6 +30,7 @@ import { useTemplates } from "@/hooks/use-templates"
 import { contractKindLabels } from "@/lib/contracts"
 import type { ContractTemplate } from "@/lib/templates"
 import { ArchiveTemplateDialog } from "./archive-template-dialog"
+import type { RecordPermissions } from "@/lib/permissions"
 
 const dateFormatter = new Intl.DateTimeFormat("en", { dateStyle: "medium" })
 
@@ -64,10 +65,10 @@ export function FormatBadge({ template }: { template: Pick<ContractTemplate, "fo
 }
 
 type TemplatesWorkspaceProps = {
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function TemplatesWorkspace({ canManage }: TemplatesWorkspaceProps) {
+export function TemplatesWorkspace({ can }: TemplatesWorkspaceProps) {
   const [search, setSearch] = useState("")
   const [archive, setArchive] = useState<{ open: boolean; template: ContractTemplate | null }>({
     open: false,
@@ -125,7 +126,7 @@ export function TemplatesWorkspace({ canManage }: TemplatesWorkspaceProps) {
                 className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
               />
             </div>
-            {canManage && (
+            {can.create && (
               <Link href="/admin/templates/new" className={buttonVariants()}>
                 <PlusIcon />
                 New template
@@ -233,9 +234,9 @@ export function TemplatesWorkspace({ canManage }: TemplatesWorkspaceProps) {
                           <DropdownMenuContent align="end" className="w-44">
                             <DropdownMenuItem render={<Link href={href} />}>
                               <PencilIcon />
-                              {canManage ? "Edit" : "View"}
+                              {can.edit ? "Edit" : "View"}
                             </DropdownMenuItem>
-                            {canManage && (
+                            {can.delete && (
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
@@ -259,7 +260,7 @@ export function TemplatesWorkspace({ canManage }: TemplatesWorkspaceProps) {
         </CardContent>
       </Card>
 
-      {canManage && (
+      {can.delete && (
         <ArchiveTemplateDialog
           open={archive.open}
           template={archive.template}

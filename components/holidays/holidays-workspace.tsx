@@ -33,6 +33,7 @@ import { useHolidaySets } from "@/hooks/use-holidays"
 import { formatHolidayDate, nextHoliday, type HolidaySet } from "@/lib/holidays"
 import { ArchiveHolidayDialog } from "./archive-holiday-dialog"
 import { HolidayFormSheet } from "./holiday-form-sheet"
+import type { RecordPermissions } from "@/lib/permissions"
 
 function matchesSearch(set: HolidaySet, query: string) {
   const needle = query.trim().toLowerCase()
@@ -74,10 +75,10 @@ function FilterChips({
 }
 
 type HolidaysWorkspaceProps = {
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function HolidaysWorkspace({ canManage }: HolidaysWorkspaceProps) {
+export function HolidaysWorkspace({ can }: HolidaysWorkspaceProps) {
   const [search, setSearch] = useState("")
   const [countryFilter, setCountryFilter] = useState<string | null>(null)
   const [yearFilter, setYearFilter] = useState<string | null>(null)
@@ -165,7 +166,7 @@ export function HolidaysWorkspace({ canManage }: HolidaysWorkspaceProps) {
                 className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
               />
             </div>
-            {canManage && (
+            {can.create && (
               <Button onClick={() => openSheet(null)}>
                 <PlusIcon />
                 Add holidays
@@ -310,7 +311,7 @@ export function HolidaysWorkspace({ canManage }: HolidaysWorkspaceProps) {
                         </TableCell>
                         <TableCell className="text-right font-medium tabular-nums">{set.holidays.length}</TableCell>
                         <TableCell className="pr-6 text-right">
-                          {canManage && (
+                          {(can.edit || can.delete) && (
                             <DropdownMenu>
                               <DropdownMenuTrigger
                                 render={
@@ -320,18 +321,22 @@ export function HolidaysWorkspace({ canManage }: HolidaysWorkspaceProps) {
                                 }
                               />
                               <DropdownMenuContent align="end" className="w-44">
-                                <DropdownMenuItem onClick={() => openSheet(set)}>
-                                  <PencilIcon />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  variant="destructive"
-                                  onClick={() => setArchive({ open: true, holidaySet: set })}
-                                >
-                                  <ArchiveIcon />
-                                  Archive
-                                </DropdownMenuItem>
+                                {can.edit && (
+                                  <DropdownMenuItem onClick={() => openSheet(set)}>
+                                    <PencilIcon />
+                                    Edit
+                                  </DropdownMenuItem>
+                                )}
+                                {can.edit && can.delete && <DropdownMenuSeparator />}
+                                {can.delete && (
+                                  <DropdownMenuItem
+                                    variant="destructive"
+                                    onClick={() => setArchive({ open: true, holidaySet: set })}
+                                  >
+                                    <ArchiveIcon />
+                                    Archive
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           )}
@@ -366,20 +371,20 @@ export function HolidaysWorkspace({ canManage }: HolidaysWorkspaceProps) {
         </CardContent>
       </Card>
 
-      {canManage && (
-        <>
-          <HolidayFormSheet
-            open={sheet.open}
-            holidaySet={sheet.holidaySet}
-            formKey={sheet.key}
-            onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
-          />
-          <ArchiveHolidayDialog
-            open={archive.open}
-            holidaySet={archive.holidaySet}
-            onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
-          />
-        </>
+      {(can.create || can.edit) && (
+        <HolidayFormSheet
+          open={sheet.open}
+          holidaySet={sheet.holidaySet}
+          formKey={sheet.key}
+          onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
+        />
+      )}
+      {can.delete && (
+        <ArchiveHolidayDialog
+          open={archive.open}
+          holidaySet={archive.holidaySet}
+          onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
+        />
       )}
     </div>
   )

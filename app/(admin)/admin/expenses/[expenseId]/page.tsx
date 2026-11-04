@@ -16,13 +16,13 @@ export const instant = false;
 
 async function ExpenseDetailSlot({ params }: { params: PageProps<"/admin/expenses/[expenseId]">["params"] }) {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "expenses.view")) {
+  if (!user || !hasPermission(user, "expenses.show")) {
     return <AccessDenied message="Ask an administrator for access to Expenses." />;
   }
 
   const { expenseId } = await params;
 
-  return <ExpenseClaimDetailView expenseId={expenseId} canManage={hasPermission(user, "expenses.manage")} />;
+  return <ExpenseClaimDetailView expenseId={expenseId} canManage={hasPermission(user, "expenses.edit")} />;
 }
 
 export default function ExpenseDetailPage({ params }: PageProps<"/admin/expenses/[expenseId]">) {

@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { TemplatesWorkspace } from "@/components/templates/templates-workspace";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, recordPermissions } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Contract templates",
@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 
 async function TemplatesSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "settings.view")) {
-    return <AccessDenied message="Ask an administrator for access to Configuration." />;
+  if (!user || !hasPermission(user, "templates.list")) {
+    return <AccessDenied message="Ask an administrator for access to Contract templates." />;
   }
 
-  return <TemplatesWorkspace canManage={hasPermission(user, "settings.manage")} />;
+  return <TemplatesWorkspace can={recordPermissions(user, "templates")} />;
 }
 
 export default function TemplatesPage() {

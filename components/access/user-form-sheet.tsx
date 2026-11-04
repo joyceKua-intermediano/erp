@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sheet"
 import { useRoles } from "@/hooks/use-roles"
 import { useSaveUser } from "@/hooks/use-users"
-import { permissionResourceLabels, permissionResources, toAccessLevels } from "@/lib/permissions"
+import { canChangeRecords, permissionResourceLabels, permissionResources, toResourceGrants } from "@/lib/permissions"
 import type { RoleSummary } from "@/lib/roles"
 import { userFormSchema, type AdminUser, type UserFormInput } from "@/lib/users"
 
@@ -163,8 +163,8 @@ function UserForm({ user, onDone }: { user: AdminUser | null; onDone: () => void
 }
 
 function RolePreview({ role }: { role: RoleSummary }) {
-  const levels = toAccessLevels(role.permissions)
-  const granted = permissionResources.filter((resource) => levels[resource] !== "none")
+  const grants = toResourceGrants(role.permissions)
+  const granted = permissionResources.filter((resource) => grants[resource].length > 0)
 
   return (
     <div className="flex flex-col gap-2.5 rounded-xl border border-primary/15 bg-primary/5 p-4">
@@ -184,10 +184,10 @@ function RolePreview({ role }: { role: RoleSummary }) {
             <Badge
               key={resource}
               variant="outline"
-              className={levels[resource] === "manage" ? "border-primary/30 text-primary" : "text-muted-foreground"}
+              className={canChangeRecords(grants[resource]) ? "border-primary/30 text-primary" : "text-muted-foreground"}
             >
               {permissionResourceLabels[resource]}
-              {levels[resource] === "view" && " · view"}
+              {!canChangeRecords(grants[resource]) && " · view"}
             </Badge>
           ))}
         </div>

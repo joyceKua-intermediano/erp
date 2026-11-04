@@ -5,7 +5,7 @@ import { EmployeeWorkspace } from "@/components/employees/employee-workspace";
 import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, recordPermissions } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Employees",
@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 
 async function EmployeesSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "employees.view")) {
+  if (!user || !hasPermission(user, "employees.list")) {
     return <AccessDenied message="Ask an administrator for access to Employees." />;
   }
 
-  return <EmployeeWorkspace canManage={hasPermission(user, "employees.manage")} />;
+  return <EmployeeWorkspace can={recordPermissions(user, "employees")} />;
 }
 
 export default function EmployeesPage() {

@@ -21,6 +21,7 @@ import {
 } from "@/lib/payroll";
 import { buildProvisionLedger, type LedgerRun } from "@/lib/payroll/ledger";
 import { payrollBreakdown, snapshotForRow } from "@/lib/payroll/snapshot";
+import type { PermissionName } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { quotationFields, type QuotationClusterKind } from "@/lib/quotations";
 import { breakdownVariants, variantWhere } from "@/lib/quotations/breakdown";
@@ -114,7 +115,7 @@ const EMPTY_PAYROLLS: Omit<ClusterPayrolls, "kind"> = {
 };
 
 export async function getClusterPayrolls(clusterId: string, query?: PayrollListQuery): Promise<ClusterPayrolls> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "payroll.view");
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, "payroll.list");
   const listQuery = payrollListQuerySchema.parse(query ?? {});
 
   try {
@@ -162,7 +163,7 @@ export async function getClusterPayrolls(clusterId: string, query?: PayrollListQ
 }
 
 export async function getPayroll(clusterId: string, payrollId: string): Promise<PayrollDetail | null> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "payroll.view");
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, "payroll.show");
 
   const parsedId = payrollIdSchema.safeParse(payrollId);
   if (!parsedId.success) return null;
@@ -238,7 +239,7 @@ export async function getPayroll(clusterId: string, payrollId: string): Promise<
 }
 
 export async function getPayrollFormOptions(clusterId: string): Promise<PayrollFormOptions> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "payroll.manage");
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, ["payroll.create", "payroll.edit"]);
 
   try {
     const cluster = await findQuotationCluster(companyId);
@@ -285,9 +286,9 @@ export async function getPayrollFormOptions(clusterId: string): Promise<PayrollF
   }
 }
 
-async function requireManageCluster(clusterId: string): Promise<bigint | null> {
+async function requireManageCluster(clusterId: string, permission: PermissionName): Promise<bigint | null> {
   try {
-    const { clusterId: companyId } = await requireClusterPermission(clusterId, "payroll.manage");
+    const { clusterId: companyId } = await requireClusterPermission(clusterId, permission);
     return companyId;
   } catch {
     return null;
@@ -386,7 +387,7 @@ async function replaceProvisions(
 }
 
 export async function createPayroll(clusterId: string, input: PayrollFormInput): Promise<ActionResult<{ id: string }>> {
-  const companyId = await requireManageCluster(clusterId);
+  const companyId = await requireManageCluster(clusterId, "payroll.create");
   if (companyId === null) return { ok: false, error: "You don't have permission to add payroll in this cluster." };
 
   try {
@@ -431,7 +432,7 @@ export async function updatePayroll(
   payrollId: string,
   input: PayrollFormInput,
 ): Promise<ActionResult<{ id: string }>> {
-  const companyId = await requireManageCluster(clusterId);
+  const companyId = await requireManageCluster(clusterId, "payroll.edit");
   if (companyId === null) return { ok: false, error: "You don't have permission to edit payroll in this cluster." };
 
   const parsedId = payrollIdSchema.safeParse(payrollId);
@@ -485,7 +486,7 @@ export async function updatePayroll(
 }
 
 export async function archivePayroll(clusterId: string, payrollId: string): Promise<ActionResult<{ id: string }>> {
-  const companyId = await requireManageCluster(clusterId);
+  const companyId = await requireManageCluster(clusterId, "payroll.delete");
   if (companyId === null) return { ok: false, error: "You don't have permission to archive payroll in this cluster." };
 
   const parsedId = payrollIdSchema.safeParse(payrollId);

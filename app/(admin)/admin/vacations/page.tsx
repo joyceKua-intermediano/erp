@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 
 async function VacationsSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "employees.view")) {
-    return <AccessDenied message="Ask an administrator for access to Employees." />;
+  if (!user || !hasPermission(user, "vacations.list")) {
+    return <AccessDenied message="Ask an administrator for access to Vacations." />;
   }
 
-  return <VacationWorkspace canManage={hasPermission(user, "employees.manage")} />;
+  return <VacationWorkspace canManage={hasPermission(user, "vacations.edit")} />;
 }
 
 export default function VacationsPage() {

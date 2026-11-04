@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 async function ExpensesSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "expenses.view")) {
+  if (!user || !hasPermission(user, "expenses.list")) {
     return <AccessDenied message="Ask an administrator for access to Expenses." />;
   }
 

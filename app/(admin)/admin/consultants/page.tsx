@@ -5,7 +5,7 @@ import { ConsultantsWorkspace } from "@/components/consultants/consultants-works
 import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, recordPermissions } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Consultants",
@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 
 async function ConsultantsSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "consultants.view")) {
+  if (!user || !hasPermission(user, "consultants.list")) {
     return <AccessDenied message="Ask an administrator for access to Consultants." />;
   }
 
-  return <ConsultantsWorkspace canManage={hasPermission(user, "consultants.manage")} />;
+  return <ConsultantsWorkspace can={recordPermissions(user, "consultants")} />;
 }
 
 export default function ConsultantsPage() {

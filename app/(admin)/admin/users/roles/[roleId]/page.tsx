@@ -15,7 +15,7 @@ export const instant = false;
 
 async function RoleSlot({ params }: { params: PageProps<"/admin/users/roles/[roleId]">["params"] }) {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "users.view")) {
+  if (!user || !hasPermission(user, "users.list")) {
     return <AccessDenied message="Ask an administrator for access to Users & roles." />;
   }
 
@@ -25,7 +25,7 @@ async function RoleSlot({ params }: { params: PageProps<"/admin/users/roles/[rol
     <RoleEditor
       roleId={roleId}
       copyFromId={null}
-      canManage={hasPermission(user, "users.manage")}
+      canManage={hasPermission(user, "users.edit")}
       currentRoleName={user.role}
     />
   );

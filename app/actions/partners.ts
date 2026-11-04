@@ -12,6 +12,7 @@ import {
   type Partner,
   type PartnerFormInput,
 } from "@/lib/partners";
+import type { PermissionName } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 // Partners are shared across clusters, but the contract count only covers clusters the user can see.
@@ -65,7 +66,7 @@ function toPartner(partner: PartnerRow, countryNames: Map<bigint, string>): Part
 }
 
 export async function getPartners(): Promise<Partner[]> {
-  const session = await requirePermission("partners.view");
+  const session = await requirePermission("partners.list");
 
   try {
     const partners = await prisma.partners.findMany({
@@ -82,7 +83,7 @@ export async function getPartners(): Promise<Partner[]> {
 }
 
 export async function getPartner(partnerId: string): Promise<Partner | null> {
-  const session = await requirePermission("partners.view");
+  const session = await requirePermission("partners.show");
 
   const parsedId = partnerIdSchema.safeParse(partnerId);
   if (!parsedId.success) return null;
@@ -101,7 +102,7 @@ export async function getPartner(partnerId: string): Promise<Partner | null> {
 }
 
 export async function getPartnerCountryOptions(): Promise<CountryOption[]> {
-  await requirePermission("partners.view");
+  await requirePermission(["partners.create", "partners.edit"]);
 
   try {
     const countries = await prisma.countries.findMany({
@@ -116,9 +117,9 @@ export async function getPartnerCountryOptions(): Promise<CountryOption[]> {
   }
 }
 
-async function canManagePartners() {
+async function canManagePartners(permission: PermissionName) {
   try {
-    await requirePermission("partners.manage");
+    await requirePermission(permission);
     return true;
   } catch {
     return false;
@@ -159,7 +160,7 @@ async function validatePartnerInput(
 }
 
 export async function createPartner(input: PartnerFormInput): Promise<ActionResult<{ id: string }>> {
-  if (!(await canManagePartners())) {
+  if (!(await canManagePartners("partners.create"))) {
     return { ok: false, error: "You don't have permission to add partners." };
   }
 
@@ -180,7 +181,7 @@ export async function createPartner(input: PartnerFormInput): Promise<ActionResu
 }
 
 export async function updatePartner(partnerId: string, input: PartnerFormInput): Promise<ActionResult<{ id: string }>> {
-  if (!(await canManagePartners())) {
+  if (!(await canManagePartners("partners.edit"))) {
     return { ok: false, error: "You don't have permission to edit partners." };
   }
 
@@ -211,7 +212,7 @@ export async function updatePartner(partnerId: string, input: PartnerFormInput):
 }
 
 export async function archivePartner(partnerId: string): Promise<ActionResult<{ id: string }>> {
-  if (!(await canManagePartners())) {
+  if (!(await canManagePartners("partners.delete"))) {
     return { ok: false, error: "You don't have permission to archive partners." };
   }
 

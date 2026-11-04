@@ -22,6 +22,7 @@ import {
 } from "@/lib/contracts";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { pageArgs } from "@/lib/pagination";
+import type { PermissionName } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 const COLOMBIA = "Colombia";
@@ -89,7 +90,7 @@ function contractListWhere(companyId: bigint, query: ContractListQuery): Prisma.
 }
 
 export async function getClusterContracts(clusterId: string, query?: ContractListQuery): Promise<ClusterContracts> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "contracts.view");
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, "contracts.list");
   const listQuery = contractListQuerySchema.parse(query ?? {});
 
   try {
@@ -121,7 +122,7 @@ export async function getClusterContracts(clusterId: string, query?: ContractLis
 }
 
 export async function getContract(clusterId: string, contractId: string): Promise<ContractDetail | null> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "contracts.view");
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, "contracts.show");
 
   const parsedId = contractIdSchema.safeParse(contractId);
   if (!parsedId.success) return null;
@@ -229,7 +230,7 @@ async function findClusterCountry(companyId: bigint) {
 }
 
 export async function getContractFormOptions(clusterId: string): Promise<ContractFormOptions> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "contracts.manage");
+  const { clusterId: companyId } = await requireClusterPermission(clusterId, ["contracts.create", "contracts.edit"]);
 
   try {
     const country = await findClusterCountry(companyId);
@@ -272,9 +273,9 @@ export async function getContractFormOptions(clusterId: string): Promise<Contrac
   }
 }
 
-async function requireManageCluster(clusterId: string): Promise<bigint | null> {
+async function requireManageCluster(clusterId: string, permission: PermissionName): Promise<bigint | null> {
   try {
-    const { clusterId: companyId } = await requireClusterPermission(clusterId, "contracts.manage");
+    const { clusterId: companyId } = await requireClusterPermission(clusterId, permission);
     return companyId;
   } catch {
     return null;
@@ -386,7 +387,7 @@ async function validateContractInput(
 }
 
 export async function createContract(clusterId: string, input: ContractFormInput): Promise<ActionResult<{ id: string }>> {
-  const companyId = await requireManageCluster(clusterId);
+  const companyId = await requireManageCluster(clusterId, "contracts.create");
   if (companyId === null) return { ok: false, error: "You don't have permission to add contracts in this cluster." };
 
   try {
@@ -416,7 +417,7 @@ export async function updateContract(
   contractId: string,
   input: ContractFormInput,
 ): Promise<ActionResult<{ id: string }>> {
-  const companyId = await requireManageCluster(clusterId);
+  const companyId = await requireManageCluster(clusterId, "contracts.edit");
   if (companyId === null) return { ok: false, error: "You don't have permission to edit contracts in this cluster." };
 
   const parsedId = contractIdSchema.safeParse(contractId);
@@ -459,7 +460,7 @@ export async function updateContract(
 }
 
 export async function archiveContract(clusterId: string, contractId: string): Promise<ActionResult<{ id: string }>> {
-  const companyId = await requireManageCluster(clusterId);
+  const companyId = await requireManageCluster(clusterId, "contracts.delete");
   if (companyId === null) return { ok: false, error: "You don't have permission to archive contracts in this cluster." };
 
   const parsedId = contractIdSchema.safeParse(contractId);

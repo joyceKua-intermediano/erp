@@ -1,7 +1,7 @@
 "use server";
 
 import type { ActionResult } from "@/lib/action-result";
-import { requireClusterPermission } from "@/lib/auth";
+import { requireClusterModule } from "@/lib/auth";
 import { pageArgs } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import {
@@ -25,7 +25,7 @@ export async function getClusterVacationRequests(
   clusterId: string,
   query?: VacationListQuery,
 ): Promise<ClusterVacationRequests> {
-  const { clusterId: companyId } = await requireClusterPermission(clusterId, "employees.view");
+  const { clusterId: companyId } = await requireClusterModule(clusterId, "vacations.list", "employees");
   const listQuery = vacationListQuerySchema.parse(query ?? {});
 
   try {
@@ -56,7 +56,7 @@ export async function getClusterVacationRequests(
 
 async function requireManageCluster(clusterId: string): Promise<bigint | null> {
   try {
-    const { clusterId: companyId } = await requireClusterPermission(clusterId, "employees.manage");
+    const { clusterId: companyId } = await requireClusterModule(clusterId, "vacations.edit", "employees");
     return companyId;
   } catch {
     return null;

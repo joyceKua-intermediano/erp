@@ -5,7 +5,7 @@ import { requirePermission } from "@/lib/auth";
 import { canAccessCluster, clusterIdFilter, type ClusterScope } from "@/lib/clusters";
 import { contractKindLabels, toContractKind } from "@/lib/contracts";
 import type { Prisma } from "@/lib/generated/prisma/client";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, type PermissionName } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import {
   templateFormSchema,
@@ -57,7 +57,7 @@ function toFormat(content: { blocks: boolean; code: boolean; legacy: boolean }):
 }
 
 export async function getTemplates(): Promise<ContractTemplate[]> {
-  const session = await requirePermission("settings.view");
+  const session = await requirePermission("templates.list");
 
   try {
     const where = visibleTemplates(session.user.clusters);
@@ -88,7 +88,7 @@ export async function getTemplates(): Promise<ContractTemplate[]> {
 }
 
 export async function getTemplate(templateId: string): Promise<ContractTemplateDetail | null> {
-  const session = await requirePermission("settings.view");
+  const session = await requirePermission("templates.show");
 
   const parsedId = templateIdSchema.safeParse(templateId);
   if (!parsedId.success) return null;
@@ -116,8 +116,8 @@ export async function getTemplate(templateId: string): Promise<ContractTemplateD
 }
 
 export async function getSampleContracts(): Promise<SampleContractOption[]> {
-  const session = await requirePermission("settings.view");
-  if (!hasPermission(session.user, "contracts.view")) return [];
+  const session = await requirePermission("templates.show");
+  if (!hasPermission(session.user, "contracts.show")) return [];
 
   try {
     const contracts = await prisma.contracts.findMany({
@@ -155,9 +155,9 @@ export async function getSampleContracts(): Promise<SampleContractOption[]> {
   }
 }
 
-async function requireManageTemplates() {
+async function requireManageTemplates(permission: PermissionName) {
   try {
-    return await requirePermission("settings.manage");
+    return await requirePermission(permission);
   } catch {
     return null;
   }
@@ -216,7 +216,7 @@ async function validateTemplateInput(
 }
 
 export async function createTemplate(input: TemplateFormInput): Promise<ActionResult<{ id: string }>> {
-  const session = await requireManageTemplates();
+  const session = await requireManageTemplates("templates.create");
   if (!session) return { ok: false, error: "You don't have permission to create contract templates." };
 
   try {
@@ -236,7 +236,7 @@ export async function createTemplate(input: TemplateFormInput): Promise<ActionRe
 }
 
 export async function updateTemplate(templateId: string, input: TemplateFormInput): Promise<ActionResult<{ id: string }>> {
-  const session = await requireManageTemplates();
+  const session = await requireManageTemplates("templates.edit");
   if (!session) return { ok: false, error: "You don't have permission to edit contract templates." };
 
   const parsedId = templateIdSchema.safeParse(templateId);
@@ -267,7 +267,7 @@ export async function updateTemplate(templateId: string, input: TemplateFormInpu
 }
 
 export async function archiveTemplate(templateId: string): Promise<ActionResult<{ id: string }>> {
-  const session = await requireManageTemplates();
+  const session = await requireManageTemplates("templates.delete");
   if (!session) return { ok: false, error: "You don't have permission to archive contract templates." };
 
   const parsedId = templateIdSchema.safeParse(templateId);

@@ -5,7 +5,7 @@ import { CompanyDetail } from "@/components/companies/company-detail";
 import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, recordPermissions } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Company",
@@ -16,7 +16,7 @@ export const instant = false;
 
 async function CompanySlot({ params }: { params: PageProps<"/admin/companies/[companyId]">["params"] }) {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "companies.view")) {
+  if (!user || !hasPermission(user, "companies.show")) {
     return <AccessDenied message="Ask an administrator for access to Companies." />;
   }
 
@@ -25,11 +25,11 @@ async function CompanySlot({ params }: { params: PageProps<"/admin/companies/[co
   return (
     <CompanyDetail
       companyId={companyId}
-      canManage={hasPermission(user, "companies.manage")}
-      canViewContacts={hasPermission(user, "contacts.view")}
-      canManageContacts={hasPermission(user, "contacts.manage")}
-      canViewPortalAccounts={hasPermission(user, "users.view")}
-      canManagePortalAccounts={hasPermission(user, "users.manage")}
+      can={recordPermissions(user, "companies")}
+      canViewContacts={hasPermission(user, "contacts.list")}
+      contacts={recordPermissions(user, "contacts")}
+      canViewPortalAccounts={hasPermission(user, "portal_accounts.list")}
+      portalAccounts={recordPermissions(user, "portal_accounts")}
     />
   );
 }

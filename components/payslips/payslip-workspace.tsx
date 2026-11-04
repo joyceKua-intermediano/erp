@@ -27,6 +27,7 @@ import { SEARCH_DEBOUNCE_MS } from "@/lib/pagination"
 import type { PayslipItem } from "@/lib/payslips"
 import { DeletePayslipDialog } from "./delete-payslip-dialog"
 import { UploadPayslipDialog } from "./upload-payslip-dialog"
+import type { RecordPermissions } from "@/lib/permissions"
 
 const headClassName = "text-xs font-semibold tracking-wide text-primary uppercase"
 
@@ -35,7 +36,7 @@ function formatUploadedAt(value: string | null) {
   return new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(value))
 }
 
-export function PayslipWorkspace({ canManage }: { canManage: boolean }) {
+export function PayslipWorkspace({ can, canDownload }: { can: RecordPermissions; canDownload: boolean }) {
   const activeCluster = useActiveCluster()
 
   if (!activeCluster) {
@@ -50,7 +51,8 @@ export function PayslipWorkspace({ canManage }: { canManage: boolean }) {
       key={activeCluster.id}
       clusterId={activeCluster.id}
       clusterLabel={activeCluster.label}
-      canManage={canManage}
+      can={can}
+      canDownload={canDownload}
     />
   )
 }
@@ -58,11 +60,13 @@ export function PayslipWorkspace({ canManage }: { canManage: boolean }) {
 function ClusterPayslipPanel({
   clusterId,
   clusterLabel,
-  canManage,
+  can,
+  canDownload,
 }: {
   clusterId: string
   clusterLabel: string
-  canManage: boolean
+  can: RecordPermissions
+  canDownload: boolean
 }) {
   const [search, setSearch] = useState("")
   const [period, setPeriod] = useState("")
@@ -81,7 +85,8 @@ function ClusterPayslipPanel({
   const payslips = data?.payslips ?? []
   const clusterTotal = data?.stats.payslips ?? 0
   const trimmedSearch = search.trim()
-  const columnCount = canManage ? 5 : 4
+  const hasActions = canDownload || can.delete
+  const columnCount = hasActions ? 5 : 4
 
   // Any change to the filters starts again from the first page.
   function updateFilters(apply: () => void) {
@@ -133,7 +138,7 @@ function ClusterPayslipPanel({
             </CardTitle>
             <CardDescription>Uploaded payslips, newest period first.</CardDescription>
           </div>
-          {canManage && (
+          {can.create && (
             <Button onClick={openUpload}>
               <UploadIcon />
               Upload payslip
@@ -193,7 +198,7 @@ function ClusterPayslipPanel({
                 <TableHead className={headClassName}>Period</TableHead>
                 <TableHead className={`hidden md:table-cell ${headClassName}`}>File</TableHead>
                 <TableHead className={`hidden lg:table-cell ${headClassName}`}>Uploaded</TableHead>
-                {canManage && <TableHead className={`pr-6 text-right ${headClassName}`}>Actions</TableHead>}
+                {hasActions && <TableHead className={`pr-6 text-right ${headClassName}`}>Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody key={isPending ? "loading" : "ready"} className="animate-in duration-300 fade-in-0">
@@ -212,7 +217,7 @@ function ClusterPayslipPanel({
                     <TableCell className="hidden lg:table-cell">
                       <Skeleton className="h-4 w-24" />
                     </TableCell>
-                    {canManage && (
+                    {hasActions && (
                       <TableCell className="pr-6">
                         <Skeleton className="ml-auto h-7 w-16" />
                       </TableCell>
@@ -256,26 +261,30 @@ function ClusterPayslipPanel({
                     <TableCell className="hidden text-muted-foreground lg:table-cell">
                       {formatUploadedAt(payslip.uploadedAt)}
                     </TableCell>
-                    {canManage && (
+                    {hasActions && (
                       <TableCell className="pr-6">
                         <div className="flex justify-end gap-1">
-                          <a
-                            href={payslipFileUrl(clusterId, payslip.id)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
-                            aria-label={`Open ${payslip.fileName}`}
-                          >
-                            <DownloadIcon />
-                          </a>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => setDeleting(payslip)}
-                            aria-label={`Delete ${payslip.employeeName}'s ${payslip.periodLabel} payslip`}
-                          >
-                            <Trash2Icon />
-                          </Button>
+                          {canDownload && (
+                            <a
+                              href={payslipFileUrl(clusterId, payslip.id)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
+                              aria-label={`Open ${payslip.fileName}`}
+                            >
+                              <DownloadIcon />
+                            </a>
+                          )}
+                          {can.delete && (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => setDeleting(payslip)}
+                              aria-label={`Delete ${payslip.employeeName}'s ${payslip.periodLabel} payslip`}
+                            >
+                              <Trash2Icon />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     )}
@@ -288,12 +297,8 @@ function ClusterPayslipPanel({
         </CardContent>
       </Card>
 
-      {canManage && (
-        <>
-          <UploadPayslipDialog key={uploadKey} open={isUploadOpen} onOpenChange={setIsUploadOpen} />
-          <DeletePayslipDialog payslip={deleting} onOpenChange={(open) => !open && setDeleting(null)} />
-        </>
-      )}
+      {can.create && <UploadPayslipDialog key={uploadKey} open={isUploadOpen} onOpenChange={setIsUploadOpen} />}
+      {can.delete && <DeletePayslipDialog payslip={deleting} onOpenChange={(open) => !open && setDeleting(null)} />}
     </div>
   )
 }

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 async function NewRoleSlot({ searchParams }: { searchParams: PageProps<"/admin/users/roles/new">["searchParams"] }) {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "users.manage")) {
+  if (!user || !hasPermission(user, "users.create")) {
     return <AccessDenied message="Only people who can manage Users & roles can create roles." />;
   }
 

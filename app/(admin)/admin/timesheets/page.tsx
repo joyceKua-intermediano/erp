@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 async function TimesheetsSlot() {
   const user = await getSessionUser();
-  if (!user || !hasPermission(user, "timesheets.view")) {
+  if (!user || !hasPermission(user, "timesheets.list")) {
     return <AccessDenied message="Ask an administrator for access to Timesheets." />;
   }
 

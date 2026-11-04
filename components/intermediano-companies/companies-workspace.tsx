@@ -36,6 +36,7 @@ import type { CountryOption, IntermedianoCompany } from "@/lib/intermediano-comp
 import { ArchiveCompanyDialog } from "./archive-company-dialog"
 import { CompanyFormSheet } from "./company-form-sheet"
 import { CompanyMark } from "./company-mark"
+import type { RecordPermissions } from "@/lib/permissions"
 
 function matchesSearch(company: IntermedianoCompany, query: string) {
   const needle = query.trim().toLowerCase()
@@ -46,10 +47,10 @@ function matchesSearch(company: IntermedianoCompany, query: string) {
 }
 
 type CompaniesWorkspaceProps = {
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function CompaniesWorkspace({ canManage }: CompaniesWorkspaceProps) {
+export function CompaniesWorkspace({ can }: CompaniesWorkspaceProps) {
   const [search, setSearch] = useState("")
   const [countryFilter, setCountryFilter] = useState<string | null>(null)
   const [sheet, setSheet] = useState<{ open: boolean; company: IntermedianoCompany | null; key: number }>({
@@ -129,7 +130,7 @@ export function CompaniesWorkspace({ canManage }: CompaniesWorkspaceProps) {
                 className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
               />
             </div>
-            {canManage && (
+            {can.create && (
               <Button onClick={() => openSheet(null)}>
                 <PlusIcon />
                 Add company
@@ -286,12 +287,14 @@ export function CompaniesWorkspace({ canManage }: CompaniesWorkspaceProps) {
                               <EyeIcon />
                               View details
                             </DropdownMenuItem>
-                            {canManage && (
+                            {can.edit && (
+                              <DropdownMenuItem onClick={() => openSheet(company)}>
+                                <PencilIcon />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
+                            {can.delete && (
                               <>
-                                <DropdownMenuItem onClick={() => openSheet(company)}>
-                                  <PencilIcon />
-                                  Edit
-                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   variant="destructive"
@@ -314,20 +317,20 @@ export function CompaniesWorkspace({ canManage }: CompaniesWorkspaceProps) {
         </CardContent>
       </Card>
 
-      {canManage && (
-        <>
-          <CompanyFormSheet
-            open={sheet.open}
-            company={sheet.company}
-            formKey={sheet.key}
-            onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
-          />
-          <ArchiveCompanyDialog
-            open={archive.open}
-            company={archive.company}
-            onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
-          />
-        </>
+      {(can.create || can.edit) && (
+        <CompanyFormSheet
+          open={sheet.open}
+          company={sheet.company}
+          formKey={sheet.key}
+          onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
+        />
+      )}
+      {can.delete && (
+        <ArchiveCompanyDialog
+          open={archive.open}
+          company={archive.company}
+          onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
+        />
       )}
     </div>
   )

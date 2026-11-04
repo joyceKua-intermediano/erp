@@ -36,6 +36,7 @@ import type { ClusterEmployees } from "@/lib/employees"
 import { SEARCH_DEBOUNCE_MS } from "@/lib/pagination"
 import { ContractStatusBadge, formatContractDate } from "./contract-status-badge"
 import { EmployeeFormSheet } from "./employee-form-sheet"
+import type { RecordPermissions } from "@/lib/permissions"
 
 export function ChooseClusterCard({
   description = "Employee records are scoped to one Intermediano legal entity at a time.",
@@ -135,10 +136,10 @@ function ClusterEmployeeSummary({ clusterLabel }: { clusterLabel: string }) {
 }
 
 type EmployeeWorkspaceProps = {
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function EmployeeWorkspace({ canManage }: EmployeeWorkspaceProps) {
+export function EmployeeWorkspace({ can }: EmployeeWorkspaceProps) {
   const activeCluster = useActiveCluster()
 
   if (!activeCluster) return <ChooseClusterCard />
@@ -146,10 +147,10 @@ export function EmployeeWorkspace({ canManage }: EmployeeWorkspaceProps) {
     return <ModuleDisabledCard module="employees" clusterLabel={activeCluster.label} />
   }
 
-  return <ClusterEmployeesPanel key={activeCluster.id} clusterLabel={activeCluster.label} canManage={canManage} />
+  return <ClusterEmployeesPanel key={activeCluster.id} clusterLabel={activeCluster.label} can={can} />
 }
 
-function ClusterEmployeesPanel({ clusterLabel, canManage }: { clusterLabel: string; canManage: boolean }) {
+function ClusterEmployeesPanel({ clusterLabel, can }: { clusterLabel: string; can: RecordPermissions }) {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [sheet, setSheet] = useState({ open: false, key: 0 })
@@ -192,7 +193,7 @@ function ClusterEmployeesPanel({ clusterLabel, canManage }: { clusterLabel: stri
                   className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
                 />
               </div>
-              {canManage && (
+              {can.create && (
                 <Button onClick={() => setSheet((current) => ({ open: true, key: current.key + 1 }))}>
                   <PlusIcon />
                   Add employee
@@ -311,7 +312,7 @@ function ClusterEmployeesPanel({ clusterLabel, canManage }: { clusterLabel: stri
         </CardContent>
       </Card>
 
-      {canManage && (
+      {can.create && (
         <EmployeeFormSheet
           open={sheet.open}
           employee={null}

@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/api/e
   let where: { id: bigint; employee_id?: bigint; company_id?: bigint; employees?: { intermediano_company_id: bigint } };
   try {
     if (clusterParam !== null) {
-      const { clusterId } = await requireClusterPermission(clusterParam, "expenses.view");
+      const { clusterId } = await requireClusterPermission(clusterParam, "expenses.show");
       where = { id: BigInt(parsedId.data), ...clusterExpensesWhere(clusterId) };
     } else if (searchParams.get("as") === "customer") {
       const { companyId } = await requireCustomerSession();

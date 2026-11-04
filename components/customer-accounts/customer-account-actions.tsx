@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type { CustomerAccount } from "@/lib/customer-accounts"
+import type { RecordPermissions } from "@/lib/permissions"
 
 export type CustomerAccountHandlers = {
   onEdit: (account: CustomerAccount) => void
@@ -28,7 +29,18 @@ export function CustomerAccountStatusBadge({ archived }: { archived: boolean }) 
   )
 }
 
-export function CustomerAccountActions({ account, handlers }: { account: CustomerAccount; handlers: CustomerAccountHandlers }) {
+export function CustomerAccountActions({
+  account,
+  handlers,
+  can,
+}: {
+  account: CustomerAccount
+  handlers: CustomerAccountHandlers
+  can: RecordPermissions
+}) {
+  const canEdit = !account.archived && can.edit
+  if (!canEdit && !can.delete) return null
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -46,19 +58,25 @@ export function CustomerAccountActions({ account, handlers }: { account: Custome
           </DropdownMenuItem>
         ) : (
           <>
-            <DropdownMenuItem onClick={() => handlers.onEdit(account)}>
-              <PencilIcon />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handlers.onResetPassword(account)}>
-              <KeyRoundIcon />
-              Reset password
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={() => handlers.onToggleArchived(account)}>
-              <ArchiveIcon />
-              Archive
-            </DropdownMenuItem>
+            {canEdit && (
+              <>
+                <DropdownMenuItem onClick={() => handlers.onEdit(account)}>
+                  <PencilIcon />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlers.onResetPassword(account)}>
+                  <KeyRoundIcon />
+                  Reset password
+                </DropdownMenuItem>
+              </>
+            )}
+            {canEdit && can.delete && <DropdownMenuSeparator />}
+            {can.delete && (
+              <DropdownMenuItem variant="destructive" onClick={() => handlers.onToggleArchived(account)}>
+                <ArchiveIcon />
+                Archive
+              </DropdownMenuItem>
+            )}
           </>
         )}
       </DropdownMenuContent>

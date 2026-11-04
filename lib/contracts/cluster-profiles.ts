@@ -50,8 +50,8 @@ const profiles: Record<string, ClusterProfile> = {
     currencySymbol: "$",
     currencyWords: "pesos chilenos",
     currencyWordsEn: "Chilean pesos",
-    taxIdLabel: "RUT",
-    employeeIdLabel: "RUT",
+    taxIdLabel: "R.U.T.",
+    employeeIdLabel: "RUN",
   },
   peru: {
     language: "es",

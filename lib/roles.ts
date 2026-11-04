@@ -1,6 +1,6 @@
 import { z } from "zod"
 import type { Cluster } from "./clusters"
-import { permissionNames, type PermissionName } from "./permissions"
+import { normalizePermissionNames, permissionNames, type PermissionName } from "./permissions"
 
 export type RoleSummary = {
   id: string
@@ -38,7 +38,7 @@ export const roleFormSchema = z
       .trim()
       .max(255, "Description is too long.")
       .transform((value) => value || null),
-    permissions: z.array(z.enum(permissionNames as [PermissionName, ...PermissionName[]])),
+    permissions: z.array(z.enum(permissionNames as [PermissionName, ...PermissionName[]])).transform(normalizePermissionNames),
     allClusters: z.boolean(),
     clusterIds: z.array(z.string().regex(/^\d+$/, "Invalid cluster id.")),
   })

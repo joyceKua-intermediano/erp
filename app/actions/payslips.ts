@@ -24,7 +24,7 @@ import { deleteStoredFile } from "@/lib/storage";
 // Uploads go through POST /api/payslips, since Server Action bodies are capped at 1 MB.
 
 export async function getClusterPayslips(clusterId: string, query?: PayslipListQuery): Promise<ClusterPayslips> {
-  const { clusterId: companyId } = await requireClusterModule(clusterId, "payroll.view", "payslips");
+  const { clusterId: companyId } = await requireClusterModule(clusterId, "payslips.list", "payslips");
   const listQuery = payslipListQuerySchema.parse(query ?? {});
 
   try {
@@ -53,7 +53,7 @@ export async function getClusterPayslips(clusterId: string, query?: PayslipListQ
 }
 
 export async function getPayslipEmployeeOptions(clusterId: string): Promise<PayslipEmployeeOption[]> {
-  const { clusterId: companyId } = await requireClusterModule(clusterId, "payroll.manage", "payslips");
+  const { clusterId: companyId } = await requireClusterModule(clusterId, "payslips.create", "payslips");
 
   try {
     const rows = await prisma.employees.findMany({
@@ -71,7 +71,7 @@ export async function getPayslipEmployeeOptions(clusterId: string): Promise<Pays
 export async function deletePayslip(clusterId: string, payslipId: string): Promise<ActionResult<{ id: string }>> {
   let companyId: bigint;
   try {
-    ({ clusterId: companyId } = await requireClusterModule(clusterId, "payroll.manage", "payslips"));
+    ({ clusterId: companyId } = await requireClusterModule(clusterId, "payslips.delete", "payslips"));
   } catch {
     return { ok: false, error: "You don't have permission to delete payslips in this cluster." };
   }

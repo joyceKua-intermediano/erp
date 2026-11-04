@@ -37,6 +37,7 @@ import { usePartners } from "@/hooks/use-partners"
 import { partnerTypeLabel, type Partner } from "@/lib/partners"
 import { ArchivePartnerDialog } from "./archive-partner-dialog"
 import { PartnerFormSheet } from "./partner-form-sheet"
+import type { RecordPermissions } from "@/lib/permissions"
 
 function matchesSearch(partner: Partner, query: string) {
   const needle = query.trim().toLowerCase()
@@ -78,10 +79,10 @@ function FilterChips({
 }
 
 type PartnersWorkspaceProps = {
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function PartnersWorkspace({ canManage }: PartnersWorkspaceProps) {
+export function PartnersWorkspace({ can }: PartnersWorkspaceProps) {
   const [search, setSearch] = useState("")
   const [countryFilter, setCountryFilter] = useState<string | null>(null)
   const [typeFilter, setTypeFilter] = useState<string | null>(null)
@@ -167,7 +168,7 @@ export function PartnersWorkspace({ canManage }: PartnersWorkspaceProps) {
                 className="pl-8 focus-visible:border-primary focus-visible:ring-primary/25"
               />
             </div>
-            {canManage && (
+            {can.create && (
               <Button onClick={() => openSheet(null)}>
                 <PlusIcon />
                 Add partner
@@ -333,12 +334,14 @@ export function PartnersWorkspace({ canManage }: PartnersWorkspaceProps) {
                               <EyeIcon />
                               View details
                             </DropdownMenuItem>
-                            {canManage && (
+                            {can.edit && (
+                              <DropdownMenuItem onClick={() => openSheet(partner)}>
+                                <PencilIcon />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
+                            {can.delete && (
                               <>
-                                <DropdownMenuItem onClick={() => openSheet(partner)}>
-                                  <PencilIcon />
-                                  Edit
-                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   variant="destructive"
@@ -361,20 +364,20 @@ export function PartnersWorkspace({ canManage }: PartnersWorkspaceProps) {
         </CardContent>
       </Card>
 
-      {canManage && (
-        <>
-          <PartnerFormSheet
-            open={sheet.open}
-            partner={sheet.partner}
-            formKey={sheet.key}
-            onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
-          />
-          <ArchivePartnerDialog
-            open={archive.open}
-            partner={archive.partner}
-            onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
-          />
-        </>
+      {(can.create || can.edit) && (
+        <PartnerFormSheet
+          open={sheet.open}
+          partner={sheet.partner}
+          formKey={sheet.key}
+          onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
+        />
+      )}
+      {can.delete && (
+        <ArchivePartnerDialog
+          open={archive.open}
+          partner={archive.partner}
+          onOpenChange={(open) => setArchive((current) => ({ ...current, open }))}
+        />
       )}
     </div>
   )

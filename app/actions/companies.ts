@@ -138,7 +138,7 @@ function toCompanyDetail(company: CompanyDetailRow): CompanyDetail {
 }
 
 export async function getCompanies(): Promise<Company[]> {
-  const session = await requirePermission("companies.view");
+  const session = await requirePermission("companies.list");
 
   try {
     const companies = await prisma.companies.findMany({
@@ -154,7 +154,7 @@ export async function getCompanies(): Promise<Company[]> {
 }
 
 export async function getCompany(companyId: string): Promise<CompanyDetail | null> {
-  const session = await requirePermission("companies.view");
+  const session = await requirePermission("companies.show");
 
   const parsedId = companyIdSchema.safeParse(companyId);
   if (!parsedId.success) return null;
@@ -172,7 +172,7 @@ export async function getCompany(companyId: string): Promise<CompanyDetail | nul
 }
 
 export async function getIndustryFieldOptions(): Promise<IndustryFieldOption[]> {
-  await requirePermission("companies.view");
+  await requirePermission(["companies.create", "companies.edit"]);
 
   try {
     const industries = await prisma.industry_fields.findMany({
@@ -273,7 +273,7 @@ function toCompanyData(data: ReturnType<typeof companyFormSchema.parse>) {
 }
 
 export async function createCompany(input: CompanyFormInput): Promise<ActionResult<{ id: string }>> {
-  const session = await sessionWithPermission("companies.manage");
+  const session = await sessionWithPermission("companies.create");
   if (!session) return { ok: false, error: "You don't have permission to add companies." };
 
   const parsed = parseCompanyInput(input);
@@ -305,7 +305,7 @@ export async function createCompany(input: CompanyFormInput): Promise<ActionResu
 }
 
 export async function updateCompany(companyId: string, input: CompanyFormInput): Promise<ActionResult<{ id: string }>> {
-  const session = await sessionWithPermission("companies.manage");
+  const session = await sessionWithPermission("companies.edit");
   if (!session) return { ok: false, error: "You don't have permission to edit companies." };
 
   const parsedId = companyIdSchema.safeParse(companyId);
@@ -340,7 +340,7 @@ export async function updateCompany(companyId: string, input: CompanyFormInput):
 }
 
 export async function archiveCompany(companyId: string): Promise<ActionResult<{ id: string }>> {
-  if (!(await sessionWithPermission("companies.manage"))) {
+  if (!(await sessionWithPermission("companies.delete"))) {
     return { ok: false, error: "You don't have permission to archive companies." };
   }
 
@@ -401,7 +401,7 @@ const editableContact = (contactId: bigint) =>
   ({ id: contactId, deleted_at: null, companies: { is: { deleted_at: null } } }) satisfies Prisma.contactsWhereInput;
 
 export async function createContact(companyId: string, input: ContactFormInput): Promise<ActionResult<{ id: string }>> {
-  const session = await sessionWithPermission("contacts.manage");
+  const session = await sessionWithPermission("contacts.create");
   if (!session) return { ok: false, error: "You don't have permission to add contacts." };
 
   const parsedCompanyId = companyIdSchema.safeParse(companyId);
@@ -438,7 +438,7 @@ export async function createContact(companyId: string, input: ContactFormInput):
 }
 
 export async function updateContact(contactId: string, input: ContactFormInput): Promise<ActionResult<{ id: string }>> {
-  if (!(await sessionWithPermission("contacts.manage"))) {
+  if (!(await sessionWithPermission("contacts.edit"))) {
     return { ok: false, error: "You don't have permission to edit contacts." };
   }
 
@@ -468,7 +468,7 @@ export async function updateContact(contactId: string, input: ContactFormInput):
 }
 
 export async function setMainContact(contactId: string): Promise<ActionResult<{ id: string }>> {
-  if (!(await sessionWithPermission("contacts.manage"))) {
+  if (!(await sessionWithPermission("contacts.edit"))) {
     return { ok: false, error: "You don't have permission to edit contacts." };
   }
 
@@ -493,7 +493,7 @@ export async function setMainContact(contactId: string): Promise<ActionResult<{ 
 }
 
 export async function removeContact(contactId: string): Promise<ActionResult<{ id: string }>> {
-  if (!(await sessionWithPermission("contacts.manage"))) {
+  if (!(await sessionWithPermission("contacts.delete"))) {
     return { ok: false, error: "You don't have permission to remove contacts." };
   }
 

@@ -18,6 +18,7 @@ import type { PayrollDetail, ProvisionLedger, ProvisionLedgerFigures } from "@/l
 import { formatAmount, formatQuotationTitle } from "@/lib/quotations"
 import { ArchivePayrollDialog } from "./archive-payroll-dialog"
 import { PayrollFormSheet } from "./payroll-form-sheet"
+import type { RecordPermissions } from "@/lib/permissions"
 
 const payrollBackLink = (
   <Link
@@ -64,10 +65,10 @@ function PayrollLoadError({ onRetry }: { onRetry: () => void }) {
 
 type PayrollDetailViewProps = {
   payrollId: string
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function PayrollDetailView({ payrollId, canManage }: PayrollDetailViewProps) {
+export function PayrollDetailView({ payrollId, can }: PayrollDetailViewProps) {
   const activeCluster = useActiveCluster()
 
   if (!activeCluster) {
@@ -82,7 +83,7 @@ export function PayrollDetailView({ payrollId, canManage }: PayrollDetailViewPro
       key={activeCluster.id}
       payrollId={payrollId}
       clusterLabel={activeCluster.label}
-      canManage={canManage}
+      can={can}
     />
   )
 }
@@ -90,7 +91,7 @@ export function PayrollDetailView({ payrollId, canManage }: PayrollDetailViewPro
 function ClusterPayrollDetail({
   payrollId,
   clusterLabel,
-  canManage,
+  can,
 }: PayrollDetailViewProps & { clusterLabel: string }) {
   const { data: payroll, isPending, isError, refetch } = usePayroll(payrollId)
 
@@ -98,7 +99,7 @@ function ClusterPayrollDetail({
   if (isError) return <PayrollLoadError onRetry={() => refetch()} />
   if (!payroll) return <PayrollNotFound clusterLabel={clusterLabel} />
 
-  return <PayrollDetailContent payroll={payroll} canManage={canManage} />
+  return <PayrollDetailContent payroll={payroll} can={can} />
 }
 
 const ledgerColumns: { key: keyof ProvisionLedgerFigures; label: string }[] = [
@@ -160,11 +161,11 @@ function ProvisionLedgerCard({ ledger, currencyName }: { ledger: ProvisionLedger
   )
 }
 
-function PayrollDetailContent({ payroll, canManage }: { payroll: PayrollDetail; canManage: boolean }) {
+function PayrollDetailContent({ payroll, can }: { payroll: PayrollDetail; can: RecordPermissions }) {
   const router = useRouter()
   const [sheet, setSheet] = useState({ open: false, key: 0 })
   const [isArchiveOpen, setArchiveOpen] = useState(false)
-  const canEdit = canManage && payroll.kind !== null
+  const canEdit = can.edit && payroll.kind !== null
   const rate = Number(payroll.exchangeRate)
   const inputs = quotationInputRows(payroll)
 
@@ -202,7 +203,7 @@ function PayrollDetailContent({ payroll, canManage }: { payroll: PayrollDetail; 
                 </span>
               </div>
             )}
-            {canManage && (
+            {(canEdit || can.delete) && (
               <div className="flex flex-wrap gap-2">
                 {canEdit && (
                   <Button variant="outline" onClick={() => setSheet((current) => ({ open: true, key: current.key + 1 }))}>
@@ -210,10 +211,12 @@ function PayrollDetailContent({ payroll, canManage }: { payroll: PayrollDetail; 
                     Edit
                   </Button>
                 )}
-                <Button variant="destructive" onClick={() => setArchiveOpen(true)}>
-                  <ArchiveIcon />
-                  Archive
-                </Button>
+                {can.delete && (
+                  <Button variant="destructive" onClick={() => setArchiveOpen(true)}>
+                    <ArchiveIcon />
+                    Archive
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -283,7 +286,7 @@ function PayrollDetailContent({ payroll, canManage }: { payroll: PayrollDetail; 
         </div>
       </div>
 
-      {canManage && (
+      {(canEdit || can.delete) && (
         <>
           {canEdit && (
             <PayrollFormSheet
@@ -294,12 +297,14 @@ function PayrollDetailContent({ payroll, canManage }: { payroll: PayrollDetail; 
               onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
             />
           )}
-          <ArchivePayrollDialog
-            open={isArchiveOpen}
-            payroll={payroll}
-            onOpenChange={setArchiveOpen}
-            onArchived={() => router.push("/admin/payroll")}
-          />
+          {can.delete && (
+            <ArchivePayrollDialog
+              open={isArchiveOpen}
+              payroll={payroll}
+              onOpenChange={setArchiveOpen}
+              onArchived={() => router.push("/admin/payroll")}
+            />
+          )}
         </>
       )}
     </div>

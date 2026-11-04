@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { listSearchSchema, pageNumberSchema } from "./pagination"
+import { passwordSchema } from "./passwords"
 
 export const contractStatuses = ["active", "pending_signature", "upcoming", "ended", "none"] as const
 
@@ -76,6 +77,13 @@ export const employeeFormSchema = z.object({
 })
 
 export type EmployeeFormInput = z.input<typeof employeeFormSchema>
+
+export const employeeCreateSchema = z.object({
+  employee: employeeFormSchema,
+  password: passwordSchema,
+})
+
+export type EmployeeCreateInput = z.input<typeof employeeCreateSchema>
 
 export function toEmployeeFormInput(employee: EmployeeDetail | null): EmployeeFormInput {
   return {

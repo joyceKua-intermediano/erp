@@ -8,13 +8,14 @@ import { useCompanyCustomerAccounts } from "@/hooks/use-customer-accounts"
 import { CUSTOMER_PORTAL_LOGIN_PATH } from "@/lib/customer-accounts"
 import { CustomerAccountActions, CustomerAccountStatusBadge } from "./customer-account-actions"
 import { useCustomerAccountDialogs } from "./use-customer-account-dialogs"
+import type { RecordPermissions } from "@/lib/permissions"
 
 type CompanyPortalAccountsCardProps = {
   company: { id: string; name: string }
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function CompanyPortalAccountsCard({ company, canManage }: CompanyPortalAccountsCardProps) {
+export function CompanyPortalAccountsCard({ company, can }: CompanyPortalAccountsCardProps) {
   const { data: accounts, isPending, isError, refetch } = useCompanyCustomerAccounts(company.id)
   const { openCreate, handlers, dialogs } = useCustomerAccountDialogs(company)
   const activeCount = accounts?.filter((account) => !account.archived).length ?? 0
@@ -35,7 +36,7 @@ export function CompanyPortalAccountsCard({ company, canManage }: CompanyPortalA
                 : `${activeCount} ${activeCount === 1 ? "person" : "people"} can sign in to the Client portal.`}
           </CardDescription>
         </div>
-        {canManage && (
+        {can.create && (
           <Button size="sm" variant="outline" onClick={openCreate}>
             <PlusIcon />
             Add portal account
@@ -67,7 +68,7 @@ export function CompanyPortalAccountsCard({ company, canManage }: CompanyPortalA
                 <span className="truncate text-xs text-muted-foreground">{account.email}</span>
               </div>
               <CustomerAccountStatusBadge archived={account.archived} />
-              {canManage && <CustomerAccountActions account={account} handlers={handlers} />}
+              <CustomerAccountActions account={account} handlers={handlers} can={can} />
             </li>
           ))}
         </ul>
@@ -77,7 +78,7 @@ export function CompanyPortalAccountsCard({ company, canManage }: CompanyPortalA
         Customers sign in at {CUSTOMER_PORTAL_LOGIN_PATH} with the email and password set here.
       </CardFooter>
 
-      {canManage && dialogs}
+      {(can.create || can.edit || can.delete) && dialogs}
     </Card>
   )
 }

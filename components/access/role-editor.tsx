@@ -13,12 +13,13 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useRole, useSaveRole } from "@/hooks/use-roles"
 import {
+  permissionNames,
   permissionResources,
-  toAccessLevels,
   toPermissionNames,
-  type AccessLevel,
-  type AccessLevels,
+  toResourceGrants,
+  type PermissionAction,
   type PermissionResource,
+  type ResourceGrants,
 } from "@/lib/permissions"
 import { roleFormSchema, type RoleDetail, type RoleFormInput } from "@/lib/roles"
 import { ClusterAccessCard } from "./cluster-access-card"
@@ -93,7 +94,7 @@ export function RoleEditor({ roleId, copyFromId, canManage, currentRoleName }: R
         initial={{
           name: role ? role.name : source ? `${source.name} copy` : "",
           description: source?.description ?? "",
-          levels: toAccessLevels(source?.permissions ?? []),
+          grants: toResourceGrants(source?.permissions ?? []),
           allClusters: source?.allClusters ?? true,
           clusterIds: source?.clusters.map((cluster) => cluster.id) ?? [],
         }}
@@ -107,7 +108,7 @@ export function RoleEditor({ roleId, copyFromId, canManage, currentRoleName }: R
 type RoleFormState = {
   name: string
   description: string
-  levels: AccessLevels
+  grants: ResourceGrants
   allClusters: boolean
   clusterIds: string[]
 }
@@ -121,7 +122,9 @@ function countClusterChanges(current: RoleFormState, initial: RoleFormState) {
 }
 
 function countChanges(current: RoleFormState, initial: RoleFormState) {
-  const changedModules = permissionResources.filter((resource) => current.levels[resource] !== initial.levels[resource])
+  const changedModules = permissionResources.filter(
+    (resource) => current.grants[resource].join() !== initial.grants[resource].join()
+  )
   return (
     changedModules.length +
     countClusterChanges(current, initial) +
@@ -148,11 +151,11 @@ function RoleForm({
 
   const changeCount = countChanges(form, initial)
   const isNew = role === null
-  const wouldLockSelfOut = isOwnRole && form.levels.users !== "manage"
-  const grantedCount = permissionResources.filter((resource) => form.levels[resource] !== "none").length
+  const wouldLockSelfOut = isOwnRole && !form.grants.users.includes("edit")
+  const grantedCount = toPermissionNames(form.grants).length
 
-  function setLevel(resource: PermissionResource, level: AccessLevel) {
-    setForm((current) => ({ ...current, levels: { ...current.levels, [resource]: level } }))
+  function setActions(resource: PermissionResource, actions: PermissionAction[]) {
+    setForm((current) => ({ ...current, grants: { ...current.grants, [resource]: actions } }))
   }
 
   function setText(key: "name" | "description", value: string) {
@@ -172,7 +175,7 @@ function RoleForm({
     const input: RoleFormInput = {
       name: form.name,
       description: form.description,
-      permissions: toPermissionNames(form.levels),
+      permissions: toPermissionNames(form.grants),
       allClusters: form.allClusters,
       clusterIds: form.allClusters ? [] : form.clusterIds,
     }
@@ -254,19 +257,20 @@ function RoleForm({
               <CardTitle className="flex items-center gap-2">
                 Permissions
                 <Badge className="bg-primary/10 text-primary tabular-nums">
-                  {grantedCount} of {permissionResources.length} modules
+                  {grantedCount} of {permissionNames.length}
                 </Badge>
               </CardTitle>
               <CardDescription>
-                View lets people open a module. Manage also lets them create, edit and delete records there.
+                List opens a module and Show opens a single record. Create, edit and delete each need the list,
+                and editing also needs Show. Delete covers archiving and restoring.
               </CardDescription>
             </CardHeader>
             <CardContent className="px-0">
               <PermissionMatrix
-                levels={form.levels}
-                initialLevels={isNew ? undefined : initial.levels}
+                grants={form.grants}
+                initialGrants={isNew ? undefined : initial.grants}
                 readOnly={readOnly}
-                onChange={setLevel}
+                onChange={setActions}
               />
             </CardContent>
           </Card>
@@ -313,7 +317,7 @@ function RoleForm({
             {wouldLockSelfOut ? (
               <span className="flex items-center gap-2 text-destructive">
                 <ShieldAlertIcon className="size-4" />
-                This is your role. Keep Manage on Users &amp; roles so you don&apos;t lock yourself out.
+                This is your role. Keep Edit on Users &amp; roles so you don&apos;t lock yourself out.
               </span>
             ) : saveRole.isError ? (
               <span role="alert" className="text-destructive">

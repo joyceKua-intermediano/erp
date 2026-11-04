@@ -13,6 +13,7 @@ import { useConsultant } from "@/hooks/use-consultants"
 import type { Consultant } from "@/lib/consultants"
 import { ArchiveConsultantDialog } from "./archive-consultant-dialog"
 import { ConsultantFormSheet } from "./consultant-form-sheet"
+import type { RecordPermissions } from "@/lib/permissions"
 
 const dateFormatter = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" })
 
@@ -70,20 +71,20 @@ function ConsultantLoadError({ onRetry }: { onRetry: () => void }) {
 
 type ConsultantDetailProps = {
   consultantId: string
-  canManage: boolean
+  can: RecordPermissions
 }
 
-export function ConsultantDetail({ consultantId, canManage }: ConsultantDetailProps) {
+export function ConsultantDetail({ consultantId, can }: ConsultantDetailProps) {
   const { data: consultant, isPending, isError, refetch } = useConsultant(consultantId)
 
   if (isPending) return <Skeleton className="h-96 rounded-xl" />
   if (isError) return <ConsultantLoadError onRetry={() => refetch()} />
   if (!consultant) return <ConsultantNotFound />
 
-  return <ConsultantDetailContent consultant={consultant} canManage={canManage} />
+  return <ConsultantDetailContent consultant={consultant} can={can} />
 }
 
-function ConsultantDetailContent({ consultant, canManage }: { consultant: Consultant; canManage: boolean }) {
+function ConsultantDetailContent({ consultant, can }: { consultant: Consultant; can: RecordPermissions }) {
   const router = useRouter()
   const [sheet, setSheet] = useState({ open: false, key: 0 })
   const [isArchiveOpen, setArchiveOpen] = useState(false)
@@ -109,16 +110,20 @@ function ConsultantDetailContent({ consultant, canManage }: { consultant: Consul
               </div>
             </div>
           </div>
-          {canManage && (
+          {(can.edit || can.delete) && (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setSheet((current) => ({ open: true, key: current.key + 1 }))}>
-                <PencilIcon />
-                Edit
-              </Button>
-              <Button variant="destructive" onClick={() => setArchiveOpen(true)}>
-                <ArchiveIcon />
-                Archive
-              </Button>
+              {can.edit && (
+                <Button variant="outline" onClick={() => setSheet((current) => ({ open: true, key: current.key + 1 }))}>
+                  <PencilIcon />
+                  Edit
+                </Button>
+              )}
+              {can.delete && (
+                <Button variant="destructive" onClick={() => setArchiveOpen(true)}>
+                  <ArchiveIcon />
+                  Archive
+                </Button>
+              )}
             </div>
           )}
         </CardContent>
@@ -179,21 +184,21 @@ function ConsultantDetailContent({ consultant, canManage }: { consultant: Consul
         </Card>
       </div>
 
-      {canManage && (
-        <>
-          <ConsultantFormSheet
-            open={sheet.open}
-            consultant={consultant}
-            formKey={sheet.key}
-            onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
-          />
-          <ArchiveConsultantDialog
-            open={isArchiveOpen}
-            consultant={consultant}
-            onOpenChange={setArchiveOpen}
-            onArchived={() => router.push("/admin/consultants")}
-          />
-        </>
+      {can.edit && (
+        <ConsultantFormSheet
+          open={sheet.open}
+          consultant={consultant}
+          formKey={sheet.key}
+          onOpenChange={(open) => setSheet((current) => ({ ...current, open }))}
+        />
+      )}
+      {can.delete && (
+        <ArchiveConsultantDialog
+          open={isArchiveOpen}
+          consultant={consultant}
+          onOpenChange={setArchiveOpen}
+          onArchived={() => router.push("/admin/consultants")}
+        />
       )}
     </div>
   )
