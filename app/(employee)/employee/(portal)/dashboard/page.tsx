@@ -3,9 +3,9 @@ import {
   CalendarClockIcon,
   FolderOpenIcon,
   PalmtreeIcon,
-  ReceiptIcon,
 } from "lucide-react";
 import { KpiCard } from "@/components/dashboard/kpi-card";
+import { LatestPayslipKpi } from "@/components/employee/payslips/latest-payslip-kpi";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -14,7 +14,6 @@ export const metadata: Metadata = {
 };
 
 const summary = [
-  { title: "Latest payslip", hint: "Your most recent payroll period", icon: ReceiptIcon },
   { title: "Hours this month", hint: "Logged in your current timesheet", icon: CalendarClockIcon },
   { title: "Vacation balance", hint: "Days remaining this contract year", icon: PalmtreeIcon },
   { title: "Documents", hint: "Files in your submission folders", icon: FolderOpenIcon },
@@ -29,6 +28,7 @@ export default function EmployeeDashboardPage() {
         description="Payslips, timesheets, vacation and documents at a glance."
       />
       <section className="grid gap-4 sm:grid-cols-2" aria-label="Summary">
+        <LatestPayslipKpi />
         {summary.map((item) => (
           <KpiCard key={item.title} title={item.title} value="—" hint={item.hint} icon={item.icon} />
         ))}
